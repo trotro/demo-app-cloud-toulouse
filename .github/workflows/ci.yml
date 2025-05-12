@@ -117,7 +117,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest requests
-          
+
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.7.0
 
@@ -151,7 +151,7 @@ jobs:
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
           helm upgrade --install standard-app ./charts/standard-app \
             --namespace test \
-            -f ./helm-standard-deployment/values.yaml \
+            -f ./charts/standard-app/values.yaml \
             -f /tmp/values-override.yaml \
             --wait --timeout 5m
           
