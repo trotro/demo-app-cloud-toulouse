@@ -188,11 +188,7 @@ jobs:
           # Wait with timeout for deployment to be ready
           echo "Waiting for deployment to be ready..."
           kubectl -n test rollout status deployment/standard-app-deployment --timeout=3m
-          
-          # Verify service
-          echo "Verifying service..."
-          kubectl -n test rollout status svc/standard-app-svc --timeout=90s
-          
+
           # Expose service for tests
           echo "Exposing service for tests..."
           kubectl -n test port-forward svc/standard-app-svc 5000:5000 &
