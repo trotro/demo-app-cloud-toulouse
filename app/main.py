@@ -30,3 +30,8 @@ def dellivres():
     print(livre)
     librairie1.del_livres(livre['nomLivre'])
     return "", 204
+
+# Point de terminaison Health Check pour Kubernetes
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy'}), 200

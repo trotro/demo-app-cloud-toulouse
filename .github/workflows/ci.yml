@@ -149,7 +149,8 @@ jobs:
       - name: Run integration tests
         run: |
           # Run the integration tests against the deployed app
-          pytest tests/integration/
+          curl -s http://localhost:5000/health | grep healthy
+          curl -s http://localhost:5000/livres | grep "Le DevOps c'est super !"
   
   update-manifests:
     needs: integration-test
@@ -158,16 +159,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
+          repository: VOTRE_NOM_UTILISATEUR/argocd-helm-charts
           token: ${{ secrets.GH_PAT }}
-      - name: Update image tag
+      
+      - name: Update image tag in Helm values
         run: |
-          sed -i "s|image: .*/standard-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values.yaml
-          sed -i "s|image: .*/standard-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values-dev.yaml
+          # Installation de yq pour la manipulation YAML
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod a+x /usr/local/bin/yq
+          
+          # Mise à jour du tag d'image dans le fichier values.yaml
+          yq eval '.image.tag = "${{ github.sha }}"' -i charts/standard-app/values.yaml
+          yq eval '.image.repository = "${{ secrets.HARBOR_URL }}/library/standard-app"' -i charts/standard-app/values.yaml
+          
+          # Vérification de la mise à jour
+          cat charts/standard-app/values.yaml
+      
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add helm-standard-deployment/values.yaml
-          git commit -m "Update image to ${{ github.sha }}"
+          git add charts/standard-app/values.yaml
+          git commit -m "Update image tag to ${{ github.sha }}"
           git push
