@@ -1,11 +1,26 @@
+# Utiliser une image Python officielle comme base
 FROM python:3.10-slim
-#ajout d'un utilisateur par sécurité
+
 RUN useradd -ms /bin/bash pythonuser
+
+# Définir le répertoire de travail dans le conteneur
 WORKDIR /app
-RUN pip install flask
-COPY demo-rest-app-python/app .
-RUN chown -R pythonuser:pythonuser /app
+
+# Copier les fichiers de dépendances et installer les dépendances
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copier le reste du code de l'application
+COPY . .
+
+# Exposer le port sur lequel l'application Flask va s'exécuter
 EXPOSE 5000
+
 USER pythonuser
-ENV FLASK_APP=/app/main.py
-CMD ["flask", "run", "--host", "0.0.0.0"]
+# Variables d'environnement pour Flask
+ENV FLASK_APP=main.py
+ENV FLASK_ENV=production
+ENV PYTHONUNBUFFERED=1
+
+# Exécuter l'application avec Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
