@@ -14,6 +14,10 @@ spec:
       labels:
         app: {{ include "clean-release-name" .  }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{ - end }
       containers:
       - name: {{ include "clean-release-name" .  }}
         image: {{ .Values.image.name }}

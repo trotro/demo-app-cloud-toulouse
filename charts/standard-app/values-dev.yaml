@@ -1,5 +1,6 @@
 image: 
   name: harbor.wariie.cloud/library/standard-app:sha-2f4aeac
+imagePullSecrets: harbor-creds
 hpa:
   enabled: false
   minReplicas: 1
