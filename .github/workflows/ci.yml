@@ -152,7 +152,7 @@ jobs:
             --namespace test \
             -f ./charts/standard-app/values-dev.yaml \
             -f /tmp/values-override.yaml \
-            --wait --timeout 5m
+            --wait --timeout 30m --debug
           
           # Vérification du déploiement
           kubectl -n test rollout status deployment/standard-app-svc --timeout=90s
