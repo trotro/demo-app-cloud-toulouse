@@ -151,7 +151,7 @@ jobs:
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
           helm upgrade --install standard-app ./charts/standard-app \
             --namespace test \
-            -f ./charts/standard-app/values.yaml \
+            -f ./charts/standard-app/values-dev.yaml \
             -f /tmp/values-override.yaml \
             --wait --timeout 5m
           
@@ -185,7 +185,7 @@ jobs:
           
           # Mise à jour du tag d'image dans le fichier values.yaml
           yq eval '.image.tag = "${{ github.sha }}"' -i charts/standard-app/values.yaml
-          yq eval '.image.repository = "${{ secrets.HARBOR_URL }}/library/standard-app"' -i charts/standard-app/values-dev.yaml
+          yq eval '.image.repository = "${{ secrets.HARBOR_URL }}/library/standard-app"' -i charts/standard-app/values.yaml
           
           # Vérification de la mise à jour
           cat charts/standard-app/values.yaml
