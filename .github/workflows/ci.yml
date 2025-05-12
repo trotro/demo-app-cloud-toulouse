@@ -138,6 +138,9 @@ jobs:
         uses: helm/kind-action@v1.12.0
       - name: Create image pull secret
         run: |
+          # Création du namespace de test
+          kubectl create namespace test --dry-run=client -o yaml | kubectl apply -f -
+          
           kubectl create secret docker-registry harbor-creds \
             --namespace test \
             --docker-server=${{ secrets.HARBOR_URL }} \
@@ -146,9 +149,6 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
       - name: Deploy app to test cluster
         run: |
-          # Création du namespace de test
-          kubectl create namespace test --dry-run=client -o yaml | kubectl apply -f -
-          
           # Création d'un fichier values.yaml temporaire avec l'image mise à jour
           cat <<EOF > /tmp/values-override.yaml
           image:
