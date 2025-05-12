@@ -1,4 +1,5 @@
-image: harbor.wariie.cloud/library/standard-app:sha-2f4aeac
+image: 
+  name: harbor.wariie.cloud/library/standard-app:sha-2f4aeac
 hpa:
   enabled: false
   minReplicas: 1

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: {{ include "clean-release-name" .  }}
-        image: {{ .Values.image }}
+        image: {{ .Values.image.name }}
         ports:
         - containerPort: 5000
         readinessProbe:
