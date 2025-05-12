@@ -163,14 +163,44 @@ jobs:
             --debug 
           #--wait --timeout 30m 
 
-          kubectl describe deployment/standard-app-dpl -n test
+          # Check pod status
+          echo "Checking pod status..."
+          kubectl get pods -n test -l app=standard-app -o wide
           
-          # Vérification du déploiement
+          # Check events for troubleshooting
+          echo "Checking events..."
+          kubectl get events -n test --sort-by='.lastTimestamp'
+          
+          # Describe deployment for detailed status and potential errors
+          echo "Deployment details:"
+          kubectl describe deployment/standard-app-deployment -n test
+          
+          # Check logs of any pods that exist
+          echo "Pod logs (if available):"
+          POD_NAME=$(kubectl get pods -n test -l app=standard-app -o jsonpath="{.items[0].metadata.name}" --ignore-not-found)
+          if [ -n "$POD_NAME" ]; then
+            kubectl logs $POD_NAME -n test --tail=50
+          else
+            echo "No pods found yet"
+          fi
+          
+          # Wait with timeout for deployment to be ready
+          echo "Waiting for deployment to be ready..."
+          kubectl -n test rollout status deployment/standard-app-deployment --timeout=3m
+          
+          # Verify service
+          echo "Verifying service..."
           kubectl -n test rollout status svc/standard-app-svc --timeout=90s
           
-          # Exposition du service pour les tests
+          # Expose service for tests
+          echo "Exposing service for tests..."
           kubectl -n test port-forward svc/standard-app-svc 5000:5000 &
+          echo "Waiting for port-forward to establish..."
           sleep 5
+          
+          # Test the endpoint
+          echo "Testing endpoint..."
+          curl -s http://localhost:5000/health || echo "Health check failed"
       - name: Run integration tests
         run: |
           # Run the integration tests against the deployed app
