@@ -3,19 +3,23 @@ kind: Deployment
 metadata:
   name: {{ include "clean-release-name" .  }}-deployment
   labels:
-    app: python
+    app: {{ include "clean-release-name" .  }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: python
+      app: {{ include "clean-release-name" .  }}
   template:
     metadata:
       labels:
-        app: python
+        app: {{ include "clean-release-name" .  }}
     spec:
       containers:
-      - name: python
+      - name: {{ include "clean-release-name" .  }}
         image: {{ .Values.image }}
         ports:
         - containerPort: 5000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
