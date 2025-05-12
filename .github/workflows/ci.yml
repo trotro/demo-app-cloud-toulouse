@@ -158,7 +158,7 @@ jobs:
           kubectl logs deployment/standard-app-svc -n test
           
           # Vérification du déploiement
-          kubectl -n test rollout status deployment/standard-app-svc --timeout=90s
+          kubectl -n test rollout status svc/standard-app-svc --timeout=90s
           
           # Exposition du service pour les tests
           kubectl -n test port-forward svc/standard-app 5000:5000 &
