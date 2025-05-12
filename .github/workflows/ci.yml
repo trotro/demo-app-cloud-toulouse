@@ -101,9 +101,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ secrets.HARBOR_URL }}/library/standard-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache
-          cache-to: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache,mode=max
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
   
-
   integration-test:
     needs: build
     if: github.event_name != 'pull_request'
@@ -134,7 +133,7 @@ jobs:
           EOF
           
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
-          helm upgrade --install standard-app ./helm-standard-deployment \
+          helm upgrade --install standard-app ./charts/standard-app \
             --namespace test \
             -f ./helm-standard-deployment/values.yaml \
             -f /tmp/values-override.yaml \
