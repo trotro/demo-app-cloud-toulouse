@@ -73,7 +73,7 @@ jobs:
           bandit -r . -x ./tests
       - name: Scan dependencies with safety
         run: |
-           if [ -f requirements.txt ]; then safety check -r requirements.txt; fi
+           if [ -f requirements.txt ]; then safety scan -r requirements.txt; fi
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
