@@ -99,7 +99,7 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ secrets.HARBOR_URL }}/library/flask-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
+          tags: ${{ secrets.HARBOR_URL }}/library/standard-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache
           cache-to: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache,mode=max
   
@@ -123,10 +123,10 @@ jobs:
       - name: Deploy app to test cluster
         run: |
           kubectl create namespace test
-          sed "s|image: .*/flask-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values.yaml | kubectl apply -n test -f -
-          kubectl -n test rollout status deployment/flask-app --timeout=90s
+          sed "s|image: .*/standard-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values.yaml | kubectl apply -n test -f -
+          kubectl -n test rollout status deployment/standard-app --timeout=90s
           # Expose service for testing
-          kubectl -n test port-forward svc/flask-app 5000:5000 &
+          kubectl -n test port-forward svc/standard-app 5000:5000 &
           sleep 5
       - name: Run integration tests
         run: |
@@ -144,7 +144,7 @@ jobs:
           token: ${{ secrets.GH_PAT }}
       - name: Update image tag
         run: |
-          sed -i "s|image: .*/flask-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values.yaml
+          sed -i "s|image: .*/standard-app:.*$|image: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}|g" helm-standard-deployment/values.yaml
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
