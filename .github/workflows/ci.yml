@@ -107,6 +107,7 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -182,8 +183,7 @@ jobs:
           sudo chmod a+x /usr/local/bin/yq
           
           # Mise à jour du tag d'image dans le fichier values.yaml
-          yq eval '.image.tag = "${{ github.sha }}"' -i charts/standard-app/values.yaml
-          yq eval '.image.repository = "${{ secrets.HARBOR_URL }}/library/standard-app"' -i charts/standard-app/values.yaml
+          yq eval '.image.name = "${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}"' -i charts/standard-app/values.yaml
           
           # Vérification de la mise à jour
           cat charts/standard-app/values.yaml
