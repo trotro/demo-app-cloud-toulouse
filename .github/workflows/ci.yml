@@ -155,7 +155,7 @@ jobs:
             --debug
           #  --wait --timeout 30m 
 
-          kubectl logs deployment/standard-app-svc -n test
+          kubectl logs svc/standard-app-svc -n test
           
           # Vérification du déploiement
           kubectl -n test rollout status svc/standard-app-svc --timeout=90s
