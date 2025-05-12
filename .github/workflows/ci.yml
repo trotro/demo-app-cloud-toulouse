@@ -160,7 +160,9 @@ jobs:
             --namespace test \
             -f ./charts/standard-app/values-dev.yaml \
             -f /tmp/values-override.yaml \
-            --debug --wait --timeout 30m 
+            --debug
+          
+          sleep 30
 
           # Check pod status
           echo "Checking pod status..."
@@ -175,13 +177,13 @@ jobs:
           kubectl describe deployment/standard-app-deployment -n test
           
           # Check logs of any pods that exist
-          echo "Pod logs (if available):"
-          POD_NAME=$(kubectl get pods -n test -l app=standard-app -o jsonpath="{.items[0].metadata.name}" --ignore-not-found)
-          if [ -n "$POD_NAME" ]; then
-            kubectl logs $POD_NAME -n test --tail=50
-          else
-            echo "No pods found yet"
-          fi
+          #echo "Pod logs (if available):"
+          #POD_NAME=$(kubectl get pods -n test -l app=standard-app -o jsonpath="{.items[0].metadata.name}" --ignore-not-found)
+          #if [ -n "$POD_NAME" ]; then
+          #  kubectl logs $POD_NAME -n test --tail=50
+          #else
+          #  echo "No pods found yet"
+          #fi
           
           # Wait with timeout for deployment to be ready
           echo "Waiting for deployment to be ready..."
