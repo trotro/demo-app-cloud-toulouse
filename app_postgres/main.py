@@ -120,10 +120,3 @@ def search_livres():
     
     livres_trouves = db.rechercher_livres(terme)
     return jsonify(livres_trouves)
-
-if __name__ == "__main__":
-    # Récupérer le port depuis les variables d'environnement ou utiliser 5000 par défaut
-    port = int(os.environ.get("PORT", 5000))
-    
-    # Exécuter l'application
-    app.run(host="0.0.0.0", port=port)
