@@ -6,14 +6,14 @@ FROM python:3.10-slim
 RUN useradd -ms /bin/bash pythonuser
 
 # Définir le répertoire de travail dans le conteneur
-WORKDIR ${PATH_APP}
+WORKDIR /app
 
 # Copier les fichiers de dépendances et installer les dépendances
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le reste du code de l'application
-COPY /app .
+COPY ${PATH_APP} .
 
 # Exposer le port sur lequel l'application Flask va s'exécuter
 EXPOSE 5000
