@@ -1,10 +1,12 @@
+ARG PATH_APP
+
 # Utiliser une image Python officielle comme base
 FROM python:3.10-slim
 
 RUN useradd -ms /bin/bash pythonuser
 
 # Définir le répertoire de travail dans le conteneur
-WORKDIR /app
+WORKDIR ${PATH_APP}
 
 # Copier les fichiers de dépendances et installer les dépendances
 COPY requirements.txt .

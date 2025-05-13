@@ -102,6 +102,7 @@ jobs:
           tags: ${{ secrets.HARBOR_URL }}/library/standard-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          build-args: "PATH_APP=/app"
   
   integration-test:
     needs: build
