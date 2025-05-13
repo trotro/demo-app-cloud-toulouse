@@ -1,4 +1,4 @@
-ARG PATH_APP
+ARG PATH_APP /app
 
 # Utiliser une image Python officielle comme base
 FROM python:3.10-slim

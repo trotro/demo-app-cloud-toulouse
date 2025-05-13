@@ -102,7 +102,8 @@ jobs:
           tags: ${{ secrets.HARBOR_URL }}/library/standard-app-postgres:latest,${{ secrets.HARBOR_URL }}/library/standard-app-postgres:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app-postgres:buildcache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-          build-args: "PATH_APP=/app_postgres"
+          build-args: |
+            PATH_APP=/app_postgres
   
   integration-test:
     needs: build
