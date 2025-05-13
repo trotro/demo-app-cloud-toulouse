@@ -209,7 +209,8 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write           # 'write' access to repository contents
+      #pull-requests: write      # 'write' access to pull requests
     steps:
       - uses: actions/checkout@v4
         with:
@@ -236,6 +237,6 @@ jobs:
           git commit -m "Update image tag to ${{ github.sha }}"
       - name: Push changes
         uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        #with:
+          #github_token: ${{ secrets.GITHUB_TOKEN }}
           #branch: ${{ github.head_ref }}
