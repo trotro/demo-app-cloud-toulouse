@@ -1,13 +1,14 @@
-image: 
-  name: harbor.wariie.cloud/library/standard-app:sha-2f4aeac
+image:
+  name: harbor.wariie.cloud/library/standard-app:a5846b038c5a6a58bd89fae7f1d8c7191830ad81
 hpa:
   enabled: true
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-crossplane: 
+crossplane:
   enabled: false
   # composition ou direct
+
   type: composition
 ingress:
   enabled: true
