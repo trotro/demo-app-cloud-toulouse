@@ -211,7 +211,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: Wariie/argocd-helm-charts
+          repository: Wariie/demo-app-python
           token: ${{ secrets.GH_PAT }}
       
       - name: Update image tag in Helm values
