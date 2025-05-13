@@ -211,7 +211,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: VOTRE_NOM_UTILISATEUR/argocd-helm-charts
+          repository: Wariie/argocd-helm-charts
           token: ${{ secrets.GH_PAT }}
       
       - name: Update image tag in Helm values
