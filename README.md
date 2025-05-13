@@ -127,7 +127,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: harbor.cgicloudtoulouse.fr/library/standard-app
+          images: ${{ secrets.HARBOR_URL }}/library/standard-app
           tags: type=sha
 
       - name: Build and push Docker images
@@ -156,10 +156,9 @@ Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec Arg
       - uses: actions/checkout@v3
         with:
           repository: VOTRE_NOM_UTILISATEUR/cloud-toulouse-k8s-workshop
-          token: ${{ secrets.GH_PAT }}
       - name: Update image tag
         run: |
-          sed -i "s|image: .*/IMAGE_NAME:.*$|image: ${{ secrets.HARBOR_URL }}/library/IMAGE_NAME:${{ github.sha }}|g" helm-standard-deployment/values.yaml
+          sed -i "s|image: .*/IMAGE_NAME:.*$|image: ${{ secrets.HARBOR_URL }}/library/IMAGE_NAME:${{ github.sha }}|g" charts/standard-app/values.yaml
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
@@ -480,7 +479,7 @@ Voici un exemple de projet
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: demo-standard
+  name: standard-app
   namespace: argocd
 spec:
   description: demo app to deploy
@@ -495,15 +494,15 @@ spec:
     server: https://kubernetes.default.svc
   # Limitation des repo sources
   sourceRepos:
-  - https://github.com/Wariie/cloud-toulouse-k8s-workshop.git
+  - https://github.com/Wariie/demo-app-cloud-toulouse.git
   roles:
   # mise en place des droits à partir des utilisateur ou de leurs groupes (cf: https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/#rbac-model-structure)
     - name: edit-demo
       description: Read Only privileges to simple user 
       policies:
-        - p, proj:demo-standard:edit-dev, applications, *, demo-standard/*, allow
-        - p, proj:demo-standard:edit-dev, logs, *, demo-standard/*, allow
-        - p, proj:demo-standard:edit-dev, repositories, *, demo-standard/*, allow
+        - p, proj:standard-app:edit-dev, applications, *, standard-app/*, allow
+        - p, proj:standard-app:edit-dev, logs, *, standard-app/*, allow
+        - p, proj:standard-app:edit-dev, repositories, *, standard-app/*, allow
       groups:
         - cgicloudtoulouse@gmail.com
 ```
@@ -527,7 +526,7 @@ Concepts clés d'ArgoCD :
 
 Pour créer une application dans ArgoCD qui utilise des images de votre registre Harbor privé :
 
-1. Forkez ce dépôt exemple : https://github.com/Wariie/cloud-toulouse-k8s-workshop afin de récupérer le dossier **helm-standard-deployment/**
+1. Forkez ce dépôt exemple : https://github.com/Wariie/demo-app-cloud-toulouse afin de récupérer le dossier **helm-standard-deployment/**
 
 2. Dans ce dossier, on retrouve un ensemble de fichier permettant de déployer simplement l'image créé auparavent. Ce projet helm comporte l'ensemble d'éléments suivants :
 - Un deployment
@@ -536,7 +535,7 @@ Pour créer une application dans ArgoCD qui utilise des images de votre registre
 - Un service 
 - Un ensemble de différents objets Crossplane (qui par défaut ne sont pas créés cf: Partie 5)
 
-3. Créez une application ArgoCD via l'interface :
+1. Créez une application ArgoCD via l'interface :
 
 Faute d'accès au cluster Kubernetes, il est tout à fait possible de créer l'application ArgoCD depuis l'interface. 
 
@@ -551,7 +550,7 @@ metadata:
 spec:
   project: demo-standard
   source:
-    repoURL: https://github.com/Wariie/cloud-toulouse-k8s-workshop.git
+    repoURL: https://github.com/Wariie/demo-app-cloud-toulouse.git
     path: helm-standard-deployment
     targetRevision: HEAD
     helm:
@@ -572,7 +571,7 @@ Il est également possible d'utiliser les lignes de commande argocd pour arriver
 ```bash
 argocd app create standard-app \
   --project demo-standard \
-  --repo https://github.com/Wariie/cloud-toulouse-k8s-workshop.git \
+  --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
   --path helm-standard-deployment \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace standard-deployment \
@@ -600,13 +599,13 @@ Autres fonctionnalités utiles d'ArgoCD :
 
 Dans ce scénario, nous déploierons une application multi-composants en utilisant ArgoCD :
 
-1. Forkez le dépôt : https://github.com/your-workshop/microservice-demo
+1. Forkez le dépôt : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
 2. Enregistrez l'application dans ArgoCD :
 
 ```bash
-argocd app create microservice-demo \
-  --repo https://github.com/VOTRE_NOM_UTILISATEUR/microservice-demo.git \
+argocd app create standard-app \
+  --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
   --path kubernetes \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace microservices \
@@ -624,6 +623,7 @@ Dans ce scénario, nous implémenterons un pipeline CI/CD complet :
 
 1. Forkez le dépôt d'application : https://github.com/your-workshop/app-source-code
 2. Forkez le dépôt de configuration : https://github.com/your-workshop/app-k8s-manifests
+#TODO CHANGE TO 1 REPO - NOTIFIER BONNE PRATIQUE DE SEPARATION
 
 3. Configurez un workflow GitHub Actions dans le dépôt d'application qui :
    - Exécute des tests automatisés
