@@ -1,7 +1,9 @@
-ARG PATH_APP /app
+# syntax=docker/dockerfile:1
 
 # Utiliser une image Python officielle comme base
 FROM python:3.10-slim
+
+ARG PATH_APP="/app"
 
 RUN useradd -ms /bin/bash pythonuser
 
