@@ -110,8 +110,6 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -221,7 +219,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: Wariie/demo-app-python
-          token: ${{ secrets.GH_PAT }}
       
       - name: Update image tag in Helm values
         run: |
