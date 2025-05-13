@@ -1,275 +1,796 @@
-# API Librairie Flask
 
-Une application API REST simple pour la gestion d'une librairie, construite avec Flask et déployée via ArgoCD et GitHub Actions.
+## Guide d'Atelier
 
-## 📋 Présentation
+### Table des Matières
+1. [Introduction](#introduction)
+2. [Prérequis de l'Atelier](#prerequis)
+3. [GitHub Workflows et CI/CD](#github-workflows)
+4. [ArgoCD - GitOps pour Kubernetes](#argocd)
+5. [Scénarios d'Atelier](#scenarios-atelier)
+6. [Crossplane pour gérer son infra applicative](#crossplane)
+7. [Conclusion](#conclusion)
 
-Cette application est une démonstration de la mise en place d'un pipeline CI/CD complet pour une application Flask, en utilisant:
-- GitHub Actions pour l'intégration continue
-- Harbor comme registre d'images privé
-- ArgoCD pour le déploiement continu sur Kubernetes
+Annexes : 
+ - Utilisation Avancée d'ArgoCD
+ - Troubleshooting
+ - Ressources
+ - GitOps
 
-L'application permet de gérer une librairie avec ses livres associés.
+<a name="introduction"></a>
+## 1. Introduction
 
-## 🛠️ Technologie
+Cet atelier offre une expérience pratique avec les architectures modernes de déploiement et les workflows CI/CD en utilisant :
 
-- Python 3.10
-- Flask
-- Docker
-- Kubernetes
-- GitHub Actions
-- ArgoCD
+- **ArgoCD** : Un outil de livraison continue déclaratif basé sur GitOps pour Kubernetes
+- **GitHub Workflows** : Un service d'intégration et de livraison continues intégré à GitHub
 
-## 🚀 Installation et démarrage rapide
+À la fin de cet atelier, les participants comprendront comment :
+- Implémenter des workflows GitOps avec ArgoCD
+- Configurer des pipelines CI/CD avec GitHub Actions
+- Automatiser le cycle de vie complet de déploiement d'applications cloud-natives
+- Appliquer les bonnes pratiques pour des déploiements robustes et fiables
 
-### Démarrage local
+<a name="prerequis"></a>
+## 2. Prérequis de l'Atelier
 
-1. **Cloner le dépôt**
-   ```bash
-   git clone https://github.com/votre-utilisateur/librairie-api.git
-   cd librairie-api
-   ```
+### Connaissances Requises
+- Compréhension basique des concepts Kubernetes (Pods, Déploiements, Services)
+- Familiarité avec Git et les technologies de conteneurs
+- Compétences de base en ligne de commande
+- Notions fondamentales de CI/CD
 
-2. **Créer un environnement virtuel**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Sur Windows: venv\Scripts\activate
-   ```
+### Prérequis Techniques
+- Compte GitHub
+- Accès à un registre Harbor privé (fourni pour l'atelier)
+- Accès à un cluster Kubernetes (fourni pour l'atelier)
+- Client Git installé localement
+- Éditeur de texte au choix
 
-3. **Installer les dépendances**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Configuration des Accès GitHub
 
-4. **Démarrer l'application**
-   ```bash
-   flask run
-   ```
+Pour permettre à ArgoCD et à vos workflows CI/CD d'accéder à vos dépôts GitHub et au registre Harbor, vous devez configurer les accès appropriés :
 
-L'API sera disponible à l'adresse http://localhost:5000
+1. **Création d'un Personal Access Token (PAT) GitHub** :
+   - Accédez à GitHub > Settings > Developer settings > Personal access tokens
+   - Cliquez sur "Generate new token" et sélectionnez les autorisations suivantes :
+     - `repo` (accès complet aux dépôts)
+     - `read:packages` (pour accéder aux packages GitHub si nécessaire)
+     - `write:packages` (pour publier des packages GitHub si nécessaire)
+   - Copiez le token généré et conservez-le en lieu sûr
 
-### Exécution avec Docker
+2. **Configuration des identifiants Harbor** :
+   - Récupérez vos identifiants pour le registre Harbor privé :
+     - URL du registre : `harbor.example.com` (remplacez par l'URL réelle fournie pour l'atelier)
+     - Nom d'utilisateur Harbor
+     - Mot de passe ou token d'accès Harbor
 
-```bash
-# Construire l'image
-docker build -t librairie-api:latest .
+3. **Configuration de GitHub Secrets pour CI/CD** :
+   - Dans votre dépôt GitHub, allez dans Settings > Secrets and variables > Actions
+   - Ajoutez les secrets suivants :
+     - `HARBOR_URL` : l'URL de votre registre Harbor (ex: harbor.example.com)
+     - `HARBOR_USERNAME` : votre nom d'utilisateur Harbor
+     - `HARBOR_PASSWORD` : votre mot de passe ou token Harbor
+     - `GH_PAT` : le Personal Access Token GitHub créé précédemment
 
-# Exécuter le conteneur
-docker run -p 5000:5000 librairie-api:latest
-```
+<a name="github-workflows"></a>
+## 3. GitHub Workflows et CI/CD
 
-## 📘 Utilisation de l'API
+### 3.1 Introduction aux GitHub Actions
 
-### Endpoints disponibles
+GitHub Actions est un service d'intégration et de livraison continues intégré directement à GitHub. Il permet d'automatiser les flux de travail de développement logiciel, y compris les tests, la construction et le déploiement.
 
-- `GET /` - Obtenir le nom de la librairie
-- `GET /nom` - Obtenir le nom de la librairie
-- `GET /livres` - Récupérer tous les livres
-- `POST /livres` - Ajouter un nouveau livre
-- `DELETE /livres` - Supprimer un livre
-- `GET /health` - Vérification de la santé de l'application pour Kubernetes
+Concepts clés des GitHub Actions :
+- **Workflow** : Processus automatisé configurable
+- **Events** : Activités qui déclenchent un workflow (push, pull request, etc.)
+- **Jobs** : Ensemble d'étapes exécutées sur un même runner
+- **Steps** : Tâches individuelles dans un job
+- **Actions** : Applications réutilisables pour les steps
+- **Runners** : Serveurs qui exécutent les workflows
 
-### Exemples d'utilisation
+### 3.2 Création d'un Workflow CI GitHub Actions
 
-**Récupérer tous les livres:**
-```bash
-curl -X GET http://localhost:5000/livres
-```
+Créons un workflow CI basique pour une application :
 
-**Ajouter un nouveau livre:**
-```bash
-curl -X POST http://localhost:5000/livres \
-  -H "Content-Type: application/json" \
-  -d '{"nomLivre": "Les Misérables"}'
-```
+1. Dans votre dépôt GitHub, créez un répertoire `.github/workflows`
+2. Ajoutez un fichier `ci.yml` avec le contenu suivant :
 
-**Supprimer un livre:**
-```bash
-curl -X DELETE http://localhost:5000/livres \
-  -H "Content-Type: application/json" \
-  -d '{"nomLivre": "Les Misérables"}'
-```
-
-## 🧪 Tests
-
-```bash
-# Exécuter les tests unitaires
-pytest
-
-# Exécuter les tests avec couverture de code
-pytest --cov=.
-```
-
-## 📦 Pipeline CI/CD
-
-### Variables d'Environnement et Secrets pour CI/CD
-
-Pour que le workflow GitHub Actions fonctionne correctement, vous devez configurer les secrets suivants dans les paramètres de votre dépôt GitHub (Settings > Secrets and variables > Actions) :
-
-| Nom du Secret | Description | Exemple |
-|---------------|-------------|---------|
-| `HARBOR_URL` | URL de votre registre Harbor privé | `harbor.example.com` |
-| `HARBOR_USERNAME` | Nom d'utilisateur Harbor pour l'authentification | `robot$project-name+github-actions` |
-| `HARBOR_PASSWORD` | Mot de passe ou token Harbor | `eyJhbGciOiJSUzI1NiIsInR5...` |
-| `GH_PAT` | Personal Access Token GitHub avec accès aux dépôts | `ghp_1234567890abcdef...` |
-
-Le token GitHub (`GH_PAT`) doit avoir les autorisations suivantes :
-- `repo` - Accès complet aux dépôts
-- `read:packages` - Pour accéder aux packages GitHub
-- `write:packages` - Pour publier des packages GitHub
-
-#### Configuration du Dépôt de Manifestes ArgoCD
-
-Le workflow CI/CD assume que vous avez un dépôt séparé pour les manifestes Kubernetes qu'ArgoCD surveille. Par défaut, le workflow pointe vers :
-
-```
-repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-```
-
-Vous devez soit :
-1. Créer ce dépôt avec le même nom
-2. Ou modifier le workflow pour pointer vers votre dépôt de manifestes existant
-
-#### Structure du Dépôt de Manifestes
-
-Le dépôt de manifestes doit contenir au moins :
-```
-kubernetes/
-  └── deployment.yaml    # Le manifeste que le pipeline CI/CD mettra à jour
-```
-
-### Workflow GitHub Actions
-
-Le workflow GitHub Actions est configuré pour:
-1. Exécuter le linting et les tests
-2. Analyser la sécurité du code
-3. Construire et pousser l'image Docker vers Harbor
-4. Déployer sur un cluster de test pour les tests d'intégration
-5. Mettre à jour les manifestes Kubernetes dans le dépôt ArgoCD
-
-### ArgoCD
-
-ArgoCD surveille le dépôt contenant les manifestes Kubernetes et applique automatiquement les changements au cluster de production.
-
-## 🏗️ Structure du projet
-
-```
-librairie-api/
-├── app.py                # Application Flask principale avec classe Librairie
-├── requirements.txt      # Dépendances Python
-├── Dockerfile            # Instructions pour construire l'image Docker
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml     # Configuration du workflow GitHub Actions
-├── kubernetes/
-│   └── deployment.yaml   # Manifestes Kubernetes
-└── tests/
-    ├── unit/            # Tests unitaires
-    └── integration/     # Tests d'intégration
-```
-
-## 🔧 Configuration Technique
-
-### Fichier Dockerfile
-
-```dockerfile
-# Utiliser une image Python officielle comme base
-FROM python:3.10-slim
-
-# Définir le répertoire de travail dans le conteneur
-WORKDIR /app
-
-# Copier les fichiers de dépendances et installer les dépendances
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copier le reste du code de l'application
-COPY . .
-
-# Exposer le port sur lequel l'application Flask va s'exécuter
-EXPOSE 5000
-
-# Variables d'environnement pour Flask
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
-ENV PYTHONUNBUFFERED=1
-
-# Exécuter l'application avec Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
-```
-
-### Manifeste Kubernetes
-
-Le déploiement Kubernetes inclut :
-- Un Deployment avec plusieurs réplicas pour la haute disponibilité
-- Un Service pour exposer l'application
-- Des sondes de santé pour garantir la fiabilité
-- Un Ingress pour l'accès externe (si vous utilisez un contrôleur Ingress)
-
-Extrait du manifeste Kubernetes :
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: librairie-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: librairie-api
-  template:
-    spec:
-      containers:
-      - name: librairie-api
-        image: harbor.example.com/project-name/librairie-api:latest
-        ports:
-        - containerPort: 5000
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 5000
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  push_to_registries:
+    name: Push Docker image to single registry
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ secrets.HARBOR_URL }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: harbor.cgicloudtoulouse.fr/library/standard-app
+          tags: type=sha
+
+      - name: Build and push Docker images
+        id: push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 ```
 
-### Configuration ArgoCD
+3. Configurez les secrets dans votre dépôt GitHub comme indiqué dans la section précédente.
 
-Pour configurer ArgoCD afin qu'il surveille et déploie votre application :
+### 3.3 Intégration CI/CD avec ArgoCD
 
-1. Créez une application dans ArgoCD :
+Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec ArgoCD :
+
+1. Ajoutez un job de déploiement à votre workflow GitHub Actions :
+
+```yaml
+  update-manifests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/cloud-toulouse-k8s-workshop
+          token: ${{ secrets.GH_PAT }}
+      - name: Update image tag
+        run: |
+          sed -i "s|image: .*/IMAGE_NAME:.*$|image: ${{ secrets.HARBOR_URL }}/library/IMAGE_NAME:${{ github.sha }}|g" helm-standard-deployment/values.yaml
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add helm-standard-deployment/values.yaml
+          git commit -m "Update image to ${{ github.sha }}"
+          git push
+```
+
+Ce workflow :
+1. Exécute les tests
+2. Construit et publie une image Docker dans Harbor
+3. Met à jour le manifeste de déploiement Kubernetes avec le nouveau tag d'image
+4. ArgoCD détecte le changement et déploie automatiquement la nouvelle version
+
+### 3.4 Workflow Avancé avec Validation et Tests d'Intégration
+
+Améliorons notre workflow avec des validations supplémentaires et des tests d'intégration :
+
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    #   - name: Run unit tests with pytest
+    #     run: |
+    #       pytest --cov=. --cov-report=xml
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+        security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run SAST scan with bandit
+        run: |
+          bandit -r . -x ./tests
+      - uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  build:
+    needs: [lint, test, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Harbor
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.HARBOR_URL }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ secrets.HARBOR_URL }}/library/standard-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+  
+  integration-test:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest requests
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }}
+
+      - name: Set up k8s Kind cluster
+        uses: helm/kind-action@v1.12.0
+      - name: Create image pull secret
+        run: |
+          # Création du namespace de test
+          kubectl create namespace test --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret docker-registry harbor-creds \
+            --namespace test \
+            --docker-server=${{ secrets.HARBOR_URL }} \
+            --docker-username=${{ secrets.HARBOR_USERNAME }} \
+            --docker-password=${{ secrets.HARBOR_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy app to test cluster
+        run: |
+          # Création d'un fichier values.yaml temporaire avec l'image mise à jour
+          cat <<EOF > /tmp/values-override.yaml
+          image:
+            name: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
+          EOF
+          
+          # Installation/mise à jour du chart Helm avec les valeurs personnalisées
+          helm upgrade --install standard-app ./charts/standard-app \
+            --namespace test \
+            -f ./charts/standard-app/values-dev.yaml \
+            -f /tmp/values-override.yaml \
+            --debug
+          
+          sleep 30
+
+          # Check pod status
+          echo "Checking pod status..."
+          kubectl get pods -n test -l app=standard-app -o wide
+          
+          # Check events for troubleshooting
+          echo "Checking events..."
+          kubectl get events -n test --sort-by='.lastTimestamp'
+          
+          # Describe deployment for detailed status and potential errors
+          echo "Deployment details:"
+          kubectl describe deployment/standard-app-deployment -n test
+          
+          # Check logs of any pods that exist
+          echo "Pod logs (if available):"
+          POD_NAME=$(kubectl get pods -n test -l app=standard-app -o jsonpath="{.items[0].metadata.name}" --ignore-not-found)
+          if [ -n "$POD_NAME" ]; then
+            kubectl logs $POD_NAME -n test --tail=50
+          else
+            echo "No pods found yet"
+          fi
+          
+          # Wait with timeout for deployment to be ready
+          echo "Waiting for deployment to be ready..."
+          kubectl -n test rollout status deployment/standard-app-deployment --timeout=3m
+          
+          # Expose service for tests
+          echo "Exposing service for tests..."
+          kubectl -n test port-forward svc/standard-app-svc 5000:5000 &
+          echo "Waiting for port-forward to establish..."
+          sleep 5
+          
+          # Test the endpoint
+          echo "Testing endpoint..."
+          curl -s http://localhost:5000/health || echo "Health check failed"
+      - name: Run integration tests
+        run: |
+          # Run the integration tests against the deployed app
+          curl -s http://localhost:5000/health | grep healthy
+          curl -s http://localhost:5000/livres | grep "Le DevOps c'est super !"
+  
+  update-manifests:
+    needs: integration-test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/argocd-helm-charts
+          token: ${{ secrets.GH_PAT }}
+      
+      - name: Update image tag in Helm values
+        run: |
+          # Installation de yq pour la manipulation YAML
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod a+x /usr/local/bin/yq
+          
+          # Mise à jour du tag d'image dans le fichier values.yaml
+          yq eval '.image.name = "${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}"' -i charts/standard-app/values.yaml
+          
+          # Vérification de la mise à jour
+          cat charts/standard-app/values.yaml
+      
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add charts/standard-app/values.yaml
+          git commit -m "Update image tag to ${{ github.sha }}"
+          git push
+```
+
+### 3.5 Stratégies de Déploiement Progressif
+
+Pour des déploiements plus sûrs, nous pouvons implémenter des stratégies de déploiement progressif avec GitHub Actions et ArgoCD :
+
+#### 1. Déploiement Canary
+
+1. Créez un manifeste pour le déploiement canary dans `kubernetes/canary.yaml`
+
+2. Ajoutez un job à votre workflow pour déployer d'abord en canary :
+
+```yaml
+  deploy-canary:
+    needs: integration-test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
+          token: ${{ secrets.GH_PAT }}
+      - name: Update canary image
+        run: |
+          sed -i "s|image: .*/demo-app:.*$|image: ${{ secrets.HARBOR_URL }}/project-name/demo-app:${{ github.sha }}|g" kubernetes/canary.yaml
+      - name: Commit and push canary changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add kubernetes/canary.yaml
+          git commit -m "Update canary to ${{ github.sha }}"
+          git push
+      - name: Wait for canary validation
+        run: sleep 300 # Attendez 5 minutes ou utilisez une action pour attendre l'approbation manuelle
+```
+
+#### 2. Déploiement Blue/Green
+
+Pour un déploiement blue/green, vous pouvez créer deux environnements identiques et basculer le trafic entre eux :
+
+1. Créez des manifestes distincts pour les environnements blue et green
+2. Configurez ArgoCD pour gérer les deux environnements
+3. Utilisez GitHub Actions pour mettre à jour l'environnement inactif et basculer le trafic
+
+<a name="argocd"></a>
+## 4. ArgoCD - GitOps pour Kubernetes
+
+### 4.0 Prérequis pour réaliser cette section 
+
+Afin de réaliser cette partie, nous avons besoin d'une adresse mail associée à un compte Google. 
+
+En effet sur l'url https://argocd.cgicloudtoulouse.fr, vous aurez la possibilitée de pouvoir vous connecter à l'application ArgoCD. Cependant, nous devons en amont positionner des droits. 
+
+Cela se fait via un projet ArgoCD, qui est une entité permettant de gérer un ensemble d'applications. Il offre également la possibilité de définir divers droits et restrictions pour un meilleur contrôle des déploiements.
+
+Parmi ces droits, on peut citer :
+
+- La gestion des droits utilisateurs (RBAC propres à ArgoCD, distincts de ceux de Kubernetes).
+- La mise en place de restrictions sur les ressources déployables.
+- La définition de restrictions sur les dépôts GitHub autorisés.
+- L'application de restrictions sur les namespaces dans lesquels une application peut être déployée.
+
+Voici un exemple de projet
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: demo-standard
+  namespace: argocd
+spec:
+  description: demo app to deploy
+  clusterResourceWhitelist:
+  # création de tout type de ressources
+  - group: '*'
+    kind: '*'
+  destinations:
+  # gestion des droits de déploiement uniquement dans ces namespaces
+  - name: in-cluster
+    namespace: standard-deployment
+    server: https://kubernetes.default.svc
+  # Limitation des repo sources
+  sourceRepos:
+  - https://github.com/Wariie/cloud-toulouse-k8s-workshop.git
+  roles:
+  # mise en place des droits à partir des utilisateur ou de leurs groupes (cf: https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/#rbac-model-structure)
+    - name: edit-demo
+      description: Read Only privileges to simple user 
+      policies:
+        - p, proj:demo-standard:edit-dev, applications, *, demo-standard/*, allow
+        - p, proj:demo-standard:edit-dev, logs, *, demo-standard/*, allow
+        - p, proj:demo-standard:edit-dev, repositories, *, demo-standard/*, allow
+      groups:
+        - cgicloudtoulouse@gmail.com
+```
+
+### 4.1 Concepts d'ArgoCD
+
+ArgoCD suit le modèle GitOps où :
+- Git est la source unique de vérité pour votre infrastructure
+- L'état souhaité est décrit de manière déclarative
+- Les changements approuvés sont automatiquement appliqués au système
+- Des agents logiciels détectent et corrigent les écarts par rapport à l'état souhaité
+
+Concepts clés d'ArgoCD :
+- **Application** : Un groupe de ressources Kubernetes
+- **Projet** : Regroupement logique d'applications
+- **Synchronisation** : Processus d'application de l'état Git au cluster
+- **Santé** : Évaluation de l'état d'exécution de l'application
+- **Vagues de Synchronisation** : Contrôle de l'ordre de création/suppression des ressources
+
+### 4.2 Création d'une Application ArgoCD
+
+Pour créer une application dans ArgoCD qui utilise des images de votre registre Harbor privé :
+
+1. Forkez ce dépôt exemple : https://github.com/Wariie/cloud-toulouse-k8s-workshop afin de récupérer le dossier **helm-standard-deployment/**
+
+2. Dans ce dossier, on retrouve un ensemble de fichier permettant de déployer simplement l'image créé auparavent. Ce projet helm comporte l'ensemble d'éléments suivants :
+- Un deployment
+- Un ingress GCP
+- Un HPA
+- Un service 
+- Un ensemble de différents objets Crossplane (qui par défaut ne sont pas créés cf: Partie 5)
+
+3. Créez une application ArgoCD via l'interface :
+
+Faute d'accès au cluster Kubernetes, il est tout à fait possible de créer l'application ArgoCD depuis l'interface. 
+
+Une application ArgoCD est défini par ArgoCD comme une Custom Resource (CR) :
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: standard-app
+  namespace: argocd
+spec:
+  project: demo-standard
+  source:
+    repoURL: https://github.com/Wariie/cloud-toulouse-k8s-workshop.git
+    path: helm-standard-deployment
+    targetRevision: HEAD
+    helm:
+      parameters:
+        - name: crossplane.enabled
+          value: 'true'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: standard-deployment
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+```
+Il est aisé de retrouver ces différentes options pour ajouter une nouvelle application. 
+
+Il est également possible d'utiliser les lignes de commande argocd pour arriver au même résultat :
 
 ```bash
-argocd app create librairie-api \
-  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+argocd app create standard-app \
+  --project demo-standard \
+  --repo https://github.com/Wariie/cloud-toulouse-k8s-workshop.git \
+  --path helm-standard-deployment \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace standard-deployment \
+  --sync-policy automated \
+  --sync-option CreateNamespace=true \
+  --helm-set 
+```
+
+### 4.3 Stratégies de Synchronisation ArgoCD 
+
+ArgoCD offre plusieurs stratégies de synchronisation :
+- **Manuelle** : Les changements doivent être explicitement approuvés et déclenchés
+- **Automatisée** : Les changements sont automatiquement appliqués lorsqu'ils sont détectés
+- **Synchronisation Sélective** : Spécifiez les ressources à synchroniser
+
+Autres fonctionnalités utiles d'ArgoCD :
+- **Rollback** : Retour à un état précédent de l'application
+- **Hooks de Synchronisation** : Opérations pré/post synchronisation
+- **Élagage des Ressources** : Suppression des ressources qui ne sont plus dans Git
+
+<a name="scenarios-atelier"></a>
+## 5. Scénarios d'Atelier
+
+### 5.1 Scénario 1 : Déploiement d'une Application Microservices avec ArgoCD
+
+Dans ce scénario, nous déploierons une application multi-composants en utilisant ArgoCD :
+
+1. Forkez le dépôt : https://github.com/your-workshop/microservice-demo
+
+2. Enregistrez l'application dans ArgoCD :
+
+```bash
+argocd app create microservice-demo \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/microservice-demo.git \
   --path kubernetes \
   --dest-server https://kubernetes.default.svc \
-  --dest-namespace default \
+  --dest-namespace microservices \
   --sync-policy automated \
-  --auto-prune \
   --self-heal
 ```
 
-2. Vérifiez le statut de l'application :
+3. Explorez les composants et dépendances de l'application déployée
+
+4. Effectuez une modification de configuration et observez le workflow GitOps
+
+### 5.2 Scénario 2 : Pipeline CI/CD Complet avec GitHub Actions et ArgoCD
+
+Dans ce scénario, nous implémenterons un pipeline CI/CD complet :
+
+1. Forkez le dépôt d'application : https://github.com/your-workshop/app-source-code
+2. Forkez le dépôt de configuration : https://github.com/your-workshop/app-k8s-manifests
+
+3. Configurez un workflow GitHub Actions dans le dépôt d'application qui :
+   - Exécute des tests automatisés
+   - Construit et publie une image Docker dans Harbor
+   - Met à jour automatiquement les manifestes Kubernetes dans le dépôt de configuration
+
+4. Configurez ArgoCD pour déployer automatiquement depuis le dépôt de configuration
+
+5. Effectuez une modification de code, poussez-la, et observez le pipeline complet :
+   - Le code est testé et validé
+   - Une nouvelle image est construite et publiée
+   - Les manifestes sont mis à jour avec la nouvelle version
+   - ArgoCD déploie automatiquement la nouvelle version
+
+### 5.3 Scénario 3 : Gestion Multi-Environnements
+
+Dans ce scénario, nous mettrons en place plusieurs environnements (dev, staging, prod) :
+
+1. Structurez votre dépôt de configuration avec des dossiers pour chaque environnement :
+   ```
+   /
+   ├── base/
+   │   ├── deployment.yaml
+   │   ├── service.yaml
+   │   └── kustomization.yaml
+   ├── overlays/
+   │   ├── dev/
+   │   │   ├── kustomization.yaml
+   │   │   └── patches/
+   │   ├── staging/
+   │   │   ├── kustomization.yaml
+   │   │   └── patches/
+   │   └── prod/
+   │       ├── kustomization.yaml
+   │       └── patches/
+   ```
+
+2. Configurez ArgoCD pour déployer chaque environnement :
 
 ```bash
-argocd app get librairie-api
+# Création de l'application dev
+argocd app create demo-app-dev \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/dev \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace dev \
+  --sync-policy automated
+
+# Création de l'application staging
+argocd app create demo-app-staging \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/staging \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace staging \
+  --sync-policy automated
+
+# Création de l'application prod
+argocd app create demo-app-prod \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/prod \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace prod \
+  --sync-policy automated
 ```
 
-### Intégration avec Harbor
+3. Configurez votre workflow GitHub Actions pour promouvoir les changements d'un environnement à l'autre :
 
-Pour tirer pleinement parti de Harbor, considérez ces configurations supplémentaires :
+```yaml
+  promote-to-staging:
+    name: Promote to Staging
+    needs: [deploy-dev]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
+          token: ${{ secrets.GH_PAT }}
+      - name: Update staging image
+        run: |
+          cd overlays/staging
+          kustomize edit set image ${{ secrets.HARBOR_URL }}/project-name/demo-app:${{ github.sha }}
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Promote image ${{ github.sha }} to staging"
+          git push
+```
+<a name="crossplane"></a>
+## 6. Crossplane pour gérer son infra applicative
 
-1. **Analyse de sécurité** : Activez les scans automatiques des images dans Harbor
-2. **Règles de rétention** : Configurez des règles pour nettoyer les anciennes images
-3. **Webhooks** : Configurez des webhooks Harbor pour notifier ArgoCD quand de nouvelles images sont disponibles
+### 6.1 Principes de Crossplane 
 
-## 🔒 Variables d'environnement
+Crossplane est une solution permmetant de déployer une infrastructure Cloud à travers Kubernetes. https://www.crossplane.io/
 
-- `FLASK_APP` - Nom du fichier de l'application Flask (par défaut: app.py)
-- `FLASK_ENV` - Environnement Flask (development/production)
+Pour fonctionner, Crossplane utilise les providers de Terraform et génère un exemple de CRD permettant de créer les ressources correspondant aux objets Cloud demandés. 
 
-## 👥 Contribution
+La mise en place de crossplane pour ce Workshop est effectué grace au fichier suivant:
+- **argocd-ref/templates/crossplane.yaml** qui permet de déployer la solution Crossplane en elle même 
+- **argocd-ref/templates/crossplane-provider.yaml** qui permet de déployer les providers et prérequis pour créer des ressources Cloud avec Crossplane via le répertoire **crossplane-provider**
 
-Les contributions sont les bienvenues! N'hésitez pas à ouvrir une issue ou une pull request.
+Le répertoire **crossplane-provider** contient les composants suivants :
 
-## 📄 Licence
+- Les deux providers pour GCP et OVH. Ces derniers permettent de générer les CRD qui permettront de créer les ressources qui nous intéresserons plus tard. Ces providers sont trouvables sur le site upbound.com (par exemple pour gcp https://marketplace.upbound.io/providers/upbound/provider-gcp-compute/v1.8.3)
+- Les provider config. Ces deux éléments permettent d'authentifier le cluster auprès des provider cloud. Les identifiants sont données en amont de ce workshop via la commande ```kubectl create secret generic ovh-secret-demo -n crossplane-system --from-file=creds=ovh.json``` à partir d'un fichier d'identifiant d'ovh par exemple. 
+- Une function qui est un élément qui sert à la construction de Composition
+- Une composition et sa définition d'un point de vue API. Ces éléments permettent de créer nos propres custom ressource sur Kubernetes un peu sur le même modèle que les modules terraform. C'est très pratique par exemple dans le cadre ou des ressources ont des dépendances (ex: une adresse ip et son entrée DNS)
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+### 6.2 Utilisation de Crossplane. 
+
+Afin d'utiliser Crossplane, il va falloir modifier le projet ArgoCD créé en amont. Supprimez la ressource Ingress avant toute chose pour éviter les problèmes de déploiement avec Crossplane. 
+
+En effet, il va falloir modifier la variable helm crossplane.enabled pour la passer a true. 
+
+Cette modification va avoir pour effet de déployer une composition Crossplane. 
+
+Cette composition Crossplane, déploie une adresse ip pour l'ingress gcp et fait un enregistrement sur OVH. 
+
+La base ayant permis la création de ces deux composant est présente dans le dossier **helm-standard-deployment**
+
+Par exemple le fichier helm-standard-deployment/templates/ipanddns.yaml va contenir plusieurs ressources. 
+
+Voici la ressource permettant de créer une adresse ip sur GCP :
+```yaml
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: GlobalAddress
+metadata:
+  name: {{ include "clean-release-name" .  }}-ip
+spec:
+  forProvider:
+    ipVersion: IPV4
+  providerConfigRef:
+    name: gcp-demo-provider-config
+```
+
+Afin de comprendre comment définir une ressource crossplane, une description api et potentiellement des exemples sont donnés pour chaque ressource dans la documentation associée sur Upbound. Par exemple pour cette ressource voici ce que nous avons : https://marketplace.upbound.io/providers/upbound/provider-gcp-compute/v1.8.3/resources/compute.gcp.upbound.io/GlobalAddress/v1beta1
+
+Sinon, par défault, nous passons par une composition (cf: https://docs.crossplane.io/v2.0-preview/composition/composite-resource-definitions/). 
+Celle-ci est définie par le fichier crossplane-provider/compositionipdns.yaml
+
+La Custom Ressource est déployé via le fichier helm-standard-deployment/templates/ipanddns.yaml.
+
+Ainsi via la composition une adresse ip est remontée, une fois créé cette dernière va être remontée à la CR qui va donner cette information à la ressource ZoneRecord (décrite par https://marketplace.upbound.io/providers/edixos/provider-ovh/v1.1.0/resources/dns.ovh.edixos.io/ZoneRecord/v1alpha1 )
+
+Ainsi normalement il ne reste plus qu'à déployer et tester. 
+
+ArgoCD, une fois configuré pour Crossplane, permet un suivi en temps réel du status des ressources. 
+
+Cela est avantageux vis-à-vis d'un terraform car les ressources sont synchronisée en temps réel ce qu'il fait que la démarche GitOps est assurée en passant par cette méthode.
+
+<a name="conclusion"></a>
+## 7. Conclusion
+
+Ce guide d'atelier vous a fourni une introduction complète à la gestion des déploiements avec ArgoCD et GitHub Workflows, intégrés avec un registre privé Harbor. Vous avez appris à mettre en place un pipeline CI/CD complet qui automatise le processus de développement, de test, de construction et de déploiement d'applications.
+
+Les principaux points à retenir sont :
+
+1. **GitOps avec ArgoCD** - L'utilisation de Git comme source unique de vérité pour vos déploiements permet une gestion déclarative, versionnable et auditée de votre infrastructure.
+
+2. **Automation avec GitHub Actions** - L'automatisation des tests, de la construction d'images et des mises à jour de configuration permet d'accélérer les cycles de développement tout en maintenant la qualité.
+
+3. **Sécurité avec Harbor** - L'utilisation d'un registre privé comme Harbor permet de sécuriser vos images, d'appliquer des politiques de sécurité et de maintenir la conformité.
+
+4. **Déploiement progressif** - Les stratégies de déploiement comme blue/green et canary vous permettent de réduire les risques associés aux déploiements en production.
+
+5. **Multi-environnement et multi-cloud** - Les techniques apprises vous permettent de gérer efficacement plusieurs environnements et fournisseurs cloud de manière cohérente.
+
+En continuant à explorer et<a name="ressources"></a>
