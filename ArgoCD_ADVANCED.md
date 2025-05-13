@@ -346,127 +346,79 @@ Pour optimiser l'intégration de votre registre Harbor privé avec ArgoCD et Git
 
 Cette configuration complète assure un flux de travail sécurisé et automatisé entre votre code source, le registre Harbor et le déploiement sur Kubernetes via ArgoCD.
 
-### 9 Gestion des Environnements Multi-Cloud avec ArgoCD et Harbor
+### 9 Gestion Multi-Environnements
 
-Pour les organisations qui opèrent dans plusieurs environnements cloud, il est crucial d'établir une stratégie de déploiement cohérente. Voici comment configurer ArgoCD et Harbor pour gérer efficacement les déploiements multi-cloud :
+Dans ce scénario, nous mettrons en place plusieurs environnements (dev, staging, prod) :
 
-1. **Structure de Projet Harbor Multi-Environnement** :
-   - Créez une structure de projets dans Harbor qui reflète vos environnements :
-     - `project-name/dev` - Images pour l'environnement de développement
-     - `project-name/staging` - Images pour l'environnement de staging
-     - `project-name/prod` - Images pour l'environnement de production
-   - Appliquez des politiques de sécurité et d'accès différentes selon l'environnement
-
-2. **Configuration ArgoCD Multi-Cluster** :
-   - Ajoutez plusieurs clusters à ArgoCD :
-   ```bash
-   # Ajout d'un cluster AWS
-   argocd cluster add aws-eks-cluster-context
-   
-   # Ajout d'un cluster GCP
-   argocd cluster add gcp-gke-cluster-context
-   
-   # Ajout d'un cluster Azure
-   argocd cluster add azure-aks-cluster-context
+1. Structurez votre dépôt de configuration avec des dossiers pour chaque environnement :
+   ```
+   /
+   ├── base/
+   │   ├── deployment.yaml
+   │   ├── service.yaml
+   │   └── kustomization.yaml
+   ├── overlays/
+   │   ├── dev/
+   │   │   ├── kustomization.yaml
+   │   │   └── patches/
+   │   ├── staging/
+   │   │   ├── kustomization.yaml
+   │   │   └── patches/
+   │   └── prod/
+   │       ├── kustomization.yaml
+   │       └── patches/
    ```
 
-3. **Applications ArgoCD pour Chaque Environnement/Cloud** :
-   ```yaml
-   # Application pour environnement de dev sur AWS
-   apiVersion: argoproj.io/v1alpha1
-   kind: Application
-   metadata:
-     name: demo-app-dev-aws
-   spec:
-     project: default
-     source:
-       repoURL: https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git
-       targetRevision: main
-       path: overlays/dev/aws
-     destination:
-       server: https://kubernetes.default.svc  # URL du cluster AWS
-       namespace: dev
-     syncPolicy:
-       automated:
-         prune: true
-         selfHeal: true
-   
-   # Application pour environnement de prod sur GCP
-   apiVersion: argoproj.io/v1alpha1
-   kind: Application
-   metadata:
-     name: demo-app-prod-gcp
-   spec:
-     project: default
-     source:
-       repoURL: https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git
-       targetRevision: main
-       path: overlays/prod/gcp
-     destination:
-       server: https://[URL_API_CLUSTER_GCP]
-       namespace: prod
-     syncPolicy:
-       automated:
-         prune: true
-         selfHeal: true
-   ```
+2. Configurez ArgoCD pour déployer chaque environnement :
 
-4. **Configuration de Replications Harbor entre Régions** :
-   - Configurez la réplication des images entre différentes instances Harbor déployées dans différentes régions
-   - Cela permet une haute disponibilité et réduit la latence lors du déploiement
-   ```yaml
-   # Exemple de configuration de réplication dans Harbor
-   {
-     "name": "prod-image-replication",
-     "dest_registry": {
-       "url": "https://harbor-eu-west.example.com",
-       "name": "eu-west-harbor"
-     },
-     "trigger": {
-       "type": "event_based"
-     },
-     "filters": [{
-       "type": "name",
-       "value": "project-name/prod/**"
-     }]
-   }
-   ```
+```bash
+# Création de l'application dev
+argocd app create demo-app-dev \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/dev \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace dev \
+  --sync-policy automated
 
-5. **Workflow CI/CD pour le Déploiement Multi-Cloud** :
-   ```yaml
-   # Job supplémentaire dans votre workflow GitHub Actions
-   deploy-multi-region:
-     needs: [integration-test]
-     runs-on: ubuntu-latest
-     steps:
-       - uses: actions/checkout@v3
-         with:
-           repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-           token: ${{ secrets.GH_PAT }}
-           
-       - name: Update image tags for all regions
-         run: |
-           # Mise à jour pour AWS
-           sed -i "s|image: .*/demo-app:.*$|image: ${{ secrets.HARBOR_URL }}/project-name/prod/demo-app:${{ github.sha }}|g" overlays/prod/aws/kustomization.yaml
-           
-           # Mise à jour pour GCP
-           sed -i "s|image: .*/demo-app:.*$|image: ${{ secrets.HARBOR_URL }}/project-name/prod/demo-app:${{ github.sha }}|g" overlays/prod/gcp/kustomization.yaml
-           
-           # Mise à jour pour Azure
-           sed -i "s|image: .*/demo-app:.*$|image: ${{ secrets.HARBOR_URL }}/project-name/prod/demo-app:${{ github.sha }}|g" overlays/prod/azure/kustomization.yaml
-           
-       - name: Commit and push changes
-         run: |
-           git config --global user.name "GitHub Actions"
-           git config --global user.email "actions@github.com"
-           git add .
-           git commit -m "Update image to ${{ github.sha }} across all cloud providers"
-           git push
-   ```
+# Création de l'application staging
+argocd app create demo-app-staging \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/staging \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace staging \
+  --sync-policy automated
 
-6. **Tableau de Bord de Surveillance Multi-Cloud** :
-   - Intégrez ArgoCD avec un outil de surveillance comme Prometheus et Grafana
-   - Créez un tableau de bord qui montre l'état de synchronisation de toutes vos applications à travers les différents clouds
-   - Ajoutez des alertes pour les échecs de déploiement ou désynchronisations
+# Création de l'application prod
+argocd app create demo-app-prod \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
+  --path overlays/prod \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace prod \
+  --sync-policy automated
+```
 
-Cette architecture permet de maintenir la cohérence des déploiements à travers différents fournisseurs cloud tout en tirant parti des avantages spécifiques de chaque plateforme.
+3. Configurez votre workflow GitHub Actions pour promouvoir les changements d'un environnement à l'autre :
+
+```yaml
+  promote-to-staging:
+    name: Promote to Staging
+    needs: [deploy-dev]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
+          token: ${{ secrets.GH_PAT }}
+      - name: Update staging image
+        run: |
+          cd overlays/staging
+          kustomize edit set image ${{ secrets.HARBOR_URL }}/project-name/demo-app:${{ github.sha }}
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Promote image ${{ github.sha }} to staging"
+          git push
+```

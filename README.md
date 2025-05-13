@@ -595,6 +595,11 @@ Autres fonctionnalités utiles d'ArgoCD :
 <a name="scenarios-atelier"></a>
 ## 5. Scénarios d'Atelier
 
+1 : OK
+2 : STANDARD APP POSTGRES
+3 : BOOKSTACK
+4 : ? 
+
 ### 5.1 Scénario 1 : Déploiement d'une Application Microservices avec ArgoCD
 
 Dans ce scénario, nous déploierons une application multi-composants en utilisant ArgoCD :
@@ -638,82 +643,10 @@ Dans ce scénario, nous implémenterons un pipeline CI/CD complet :
    - Les manifestes sont mis à jour avec la nouvelle version
    - ArgoCD déploie automatiquement la nouvelle version
 
-### 5.3 Scénario 3 : Gestion Multi-Environnements
+### 5.3 Scénario 3 : Déploiement d'un Bookstack
 
-Dans ce scénario, nous mettrons en place plusieurs environnements (dev, staging, prod) :
+# TODO
 
-1. Structurez votre dépôt de configuration avec des dossiers pour chaque environnement :
-   ```
-   /
-   ├── base/
-   │   ├── deployment.yaml
-   │   ├── service.yaml
-   │   └── kustomization.yaml
-   ├── overlays/
-   │   ├── dev/
-   │   │   ├── kustomization.yaml
-   │   │   └── patches/
-   │   ├── staging/
-   │   │   ├── kustomization.yaml
-   │   │   └── patches/
-   │   └── prod/
-   │       ├── kustomization.yaml
-   │       └── patches/
-   ```
-
-2. Configurez ArgoCD pour déployer chaque environnement :
-
-```bash
-# Création de l'application dev
-argocd app create demo-app-dev \
-  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
-  --path overlays/dev \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace dev \
-  --sync-policy automated
-
-# Création de l'application staging
-argocd app create demo-app-staging \
-  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
-  --path overlays/staging \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace staging \
-  --sync-policy automated
-
-# Création de l'application prod
-argocd app create demo-app-prod \
-  --repo https://github.com/VOTRE_NOM_UTILISATEUR/argocd-demo-app.git \
-  --path overlays/prod \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace prod \
-  --sync-policy automated
-```
-
-3. Configurez votre workflow GitHub Actions pour promouvoir les changements d'un environnement à l'autre :
-
-```yaml
-  promote-to-staging:
-    name: Promote to Staging
-    needs: [deploy-dev]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-          token: ${{ secrets.GH_PAT }}
-      - name: Update staging image
-        run: |
-          cd overlays/staging
-          kustomize edit set image ${{ secrets.HARBOR_URL }}/project-name/demo-app:${{ github.sha }}
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .
-          git commit -m "Promote image ${{ github.sha }} to staging"
-          git push
-```
 <a name="crossplane"></a>
 ## 6. Crossplane pour gérer son infra applicative
 
