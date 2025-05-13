@@ -232,8 +232,8 @@ jobs:
       - name: Commit and push changes
         run: |
           git add charts/standard-app/values.yaml
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          # git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          # git config --local user.name "github-actions[bot]"
           git commit -m "Update image tag to ${{ github.sha }}"
       - name: Push changes
         uses: ad-m/github-push-action@master
