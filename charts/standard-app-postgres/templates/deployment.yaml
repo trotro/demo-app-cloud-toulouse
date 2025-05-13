@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clean-release-name" .  }}-deployment
+  labels:
+    app: {{ include "clean-release-name" .  }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "clean-release-name" .  }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "clean-release-name" .  }}
+    spec:
+        {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ include "clean-release-name" .  }}
+        image: {{ .Values.image.name }}
+        ports:
+        - containerPort: 5000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000

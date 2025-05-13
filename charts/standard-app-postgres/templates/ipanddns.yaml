@@ -1,0 +1,43 @@
+{{- if .Values.crossplane.enabled }}
+{{- if eq .Values.crossplane.type "composition"}}
+---
+apiVersion: demo.crossplane.io/v1alpha1
+kind: IpDnsComposition
+metadata:
+  name: {{ include "clean-release-name" .  }}-ip-and-dns
+  namespace: {{ .Release.Namespace }}
+spec:
+  parameters:
+    labels:
+      test: test
+    ipName: {{ include "clean-release-name" .  }}-ip
+    dnsName: {{ include "clean-release-name" .  }}-dns
+    dnsNameEntry: {{ include "clean-release-name" .  }}
+{{- end}}
+{{- if eq .Values.crossplane.type "direct"}}
+---
+apiVersion: dns.ovh.edixos.io/v1alpha1
+kind: ZoneRecord
+metadata:
+  name: {{ include "clean-release-name" .  }}-dns
+spec:
+  forProvider:
+    fieldtype: A
+    subdomain: {{ include "clean-release-name" .  }}-dns
+    target: 34.8.114.170
+    ttl: 300
+    zone: cgicloudtoulouse.fr
+  providerConfigRef:
+    name: ovh-demo-provider-config
+---
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: GlobalAddress
+metadata:
+  name: {{ include "clean-release-name" .  }}-ip
+spec:
+  forProvider:
+    ipVersion: IPV6
+  providerConfigRef:
+    name: gcp-demo-provider-config
+{{- end }}
+{{- end}}
