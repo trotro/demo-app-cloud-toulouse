@@ -208,6 +208,8 @@ jobs:
     needs: integration-test
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      content: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -233,8 +235,6 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git commit -m "Update image tag to ${{ github.sha }}"
       - name: Push changes
-        permissions:
-          content: write
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
