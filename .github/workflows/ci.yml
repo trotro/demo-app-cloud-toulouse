@@ -206,7 +206,7 @@ jobs:
   
   update-manifests:
     needs: integration-test
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' 
     runs-on: ubuntu-latest
     permissions:
       contents: write           # 'write' access to repository contents
