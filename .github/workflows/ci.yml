@@ -233,6 +233,8 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git commit -m "Update image tag to ${{ github.sha }}"
       - name: Push changes
+        permissions:
+          content: write
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
