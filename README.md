@@ -569,12 +569,12 @@ Il est également possible d'utiliser les lignes de commande argocd pour arriver
 argocd app create standard-app \
   --project demo-standard \
   --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
-  --path helm-standard-deployment \
+  --path . \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace standard-deployment \
   --sync-policy automated \
   --sync-option CreateNamespace=true \
-  --helm-set 
+  --values ./values.yaml
 ```
 
 ### 4.3 Stratégies de Synchronisation ArgoCD 
@@ -592,10 +592,7 @@ Autres fonctionnalités utiles d'ArgoCD :
 <a name="scenarios-atelier"></a>
 ## 5. Scénarios d'Atelier
 
-1 : OK
-2 : STANDARD APP POSTGRES
-3 : BOOKSTACK
-4 : ? 
+Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts évoqués
 
 ### 5.1 Scénario 1 : Déploiement d'une Application Microservices avec ArgoCD
 
@@ -608,41 +605,138 @@ Dans ce scénario, nous déploierons une application multi-composants en utilisa
 ```bash
 argocd app create standard-app \
   --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
-  --path kubernetes \
+  --path . \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace microservices \
   --sync-policy automated \
-  --self-heal
+  --self-heal \
+  --values ./values.yaml
 ```
 
 3. Explorez les composants et dépendances de l'application déployée
 
 4. Effectuez une modification de configuration et observez le workflow GitOps
 
-### 5.2 Scénario 2 : Pipeline CI/CD Complet avec GitHub Actions et ArgoCD
+<a name="scenarios-atelier"></a>
+## 5. Scénarios d'Atelier
 
-Dans ce scénario, nous implémenterons un pipeline CI/CD complet :
+Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts appris :
 
-1. Forkez le dépôt d'application : https://github.com/your-workshop/app-source-code
-2. Forkez le dépôt de configuration : https://github.com/your-workshop/app-k8s-manifests
-#TODO CHANGE TO 1 REPO - NOTIFIER BONNE PRATIQUE DE SEPARATION
+### 5.1 Scénario 1 : Déploiement d'une Application Standard avec ArgoCD
 
-3. Configurez un workflow GitHub Actions dans le dépôt d'application qui :
-   - Exécute des tests automatisés
-   - Construit et publie une image Docker dans Harbor
-   - Met à jour automatiquement les manifestes Kubernetes dans le dépôt de configuration
+Dans ce scénario, nous déploierons une application REST simple en utilisant ArgoCD :
 
-4. Configurez ArgoCD pour déployer automatiquement depuis le dépôt de configuration
+1. Forkez le dépôt : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
-5. Effectuez une modification de code, poussez-la, et observez le pipeline complet :
+2. Enregistrez l'application dans ArgoCD :
+```bash
+argocd app create standard-app \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
+  --path . \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace microservices \
+  --sync-policy automated \
+  --self-heal \ 
+  --values ./values.yaml
+```
+
+3. Explorez les composants et dépendances de l'application déployée
+
+4. Effectuez une modification de configuration (par exemple, changez le nombre de réplicas) et observez le workflow GitOps en action
+
+### 5.2 Scénario 2 : Déploiement d'une Application Standard avec PostgreSQL
+
+Dans ce scénario, vous allez mettre en place une application qui interagit avec une base de données PostgreSQL :
+
+1. Forkez le dépôt contenant l'application avec PostgreSQL : https://github.com/Wariie/demo-app-cloud-toulouse.git
+
+2. Analysez l'architecture de l'application :
+   - Frontend/API en Flask
+   - Base de données PostgreSQL
+   - Secrets Kubernetes pour les identifiants de la base de données
+
+3. Créez une application ArgoCD pour déployer l'ensemble :
+```bash
+argocd app create standard-app-postgres \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
+  --path . \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace postgres-demo \
+  --sync-policy automated \
+  --self-heal \
+  --values ./values-postgres.yaml
+```
+
+4. Testez l'application et observez comment les différents composants interagissent entre eux
+
+5. Explorez comment la gestion des secrets est réalisée dans un environnement GitOps sécurisé
+
+### 5.3 Scénario 3 : Déploiement de Bookstack avec ArgoCD 
+
+#TODO CHECK BOOKSTACK
+
+Dans ce scénario, nous allons déployer Bookstack, une plateforme open-source de gestion de documentation basée sur Laravel :
+
+1. Forkez le dépôt contenant les charts Helm pour Bookstack : https://github.com/Wariie/bookstack-k8s.git
+
+2. Examinez les dépendances de Bookstack :
+   - Application web PHP/Laravel
+   - Base de données MySQL
+   - Système de stockage pour les médias
+
+3. Créez une application ArgoCD pour déployer Bookstack :
+```bash
+argocd app create bookstack \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/bookstack-k8s.git \
+  --path helm \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace bookstack \
+  --sync-policy automated \
+  --self-heal \
+  --helm-set mariadb.auth.rootPassword=rootpassword \
+  --helm-set bookstack.password=mypassword
+```
+
+4. Accédez à l'interface Bookstack et créez quelques ressources documentaires
+
+5. Explorez comment les volumes persistants sont gérés pour stocker les données et les médias
+
+### 5.4 Scénario 4 : Pipeline CI/CD Complet avec GitHub Actions et ArgoCD
+
+Dans ce scénario, nous implémenterons un pipeline CI/CD complet avec intégration entre GitHub Actions et ArgoCD :
+
+1. Forkez le dépôt qui combine application et configuration : https://github.com/Wariie/demo-app-cloud-toulouse.git
+
+   > **Note**: Bien que la séparation du code source et des manifestes de déploiement soit généralement une bonne pratique, ce dépôt unique simplifie la démonstration. Dans un environnement de production, envisagez de séparer ces préoccupations.
+
+2. Examinez le workflow GitHub Actions déjà configuré :
+   - Exécution de tests automatisés
+   - Construction et publication d'une image Docker dans Harbor
+   - Mise à jour automatique des manifestes Helm dans le même dépôt
+   - Possibilité pour ArgoCD de détecter et d'appliquer les changements
+
+3. Configurez ArgoCD pour surveiller et déployer depuis ce dépôt :
+```bash
+argocd app create demo-cicd \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
+  --path . \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace demo-cicd \
+  --sync-policy automated \
+  --values values.yaml
+```
+
+4. Effectuez une modification de code dans l'application :
+   - Modifiez un endpoint ou ajoutez une fonctionnalité simple
+   - Poussez les changements et observez le pipeline complet en action
+
+5. Explorez le tableau de bord GitHub Actions et ArgoCD pour comprendre comment les différentes étapes s'enchaînent :
    - Le code est testé et validé
-   - Une nouvelle image est construite et publiée
-   - Les manifestes sont mis à jour avec la nouvelle version
-   - ArgoCD déploie automatiquement la nouvelle version
+   - Une nouvelle image est construite et publiée dans Harbor
+   - Les manifestes Helm sont mis à jour avec la nouvelle version d'image
+   - ArgoCD détecte les changements et déploie automatiquement la nouvelle version
 
-### 5.3 Scénario 3 : Déploiement d'un Bookstack
-
-# TODO
+Ce scénario illustre l'intégration complète entre les phases CI (Intégration Continue) et CD (Déploiement Continu), en utilisant GitHub Actions et ArgoCD comme outils principaux.
 
 <a name="crossplane"></a>
 ## 6. Crossplane pour gérer son infra applicative
