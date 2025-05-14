@@ -27,13 +27,11 @@ def get_librairie():
     if result:
         # La librairie existe déjà, on va la récupérer
         librairie_id = result[0]
-        cursor.close()
-        connection.close()
         
         # Récupérer les détails de la librairie
-        cursor = connection.cursor()
         cursor.execute("SELECT nom, adresse FROM librairies WHERE id = %s", (librairie_id,))
         nom, adresse = cursor.fetchone()
+
         cursor.close()
         connection.close()
         
