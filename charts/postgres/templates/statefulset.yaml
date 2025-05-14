@@ -4,7 +4,7 @@ metadata:
   name: {{ include "clean-release-name" .  }}-postgres
 spec:
   serviceName: {{ include "clean-release-name" .  }}-postgres
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: postgres
