@@ -409,7 +409,6 @@ argocd app create demo-app-prod \
       - uses: actions/checkout@v3
         with:
           repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-          token: ${{ secrets.GH_PAT }}
       - name: Update staging image
         run: |
           cd overlays/staging

@@ -70,7 +70,6 @@ Pour permettre à ArgoCD et à vos workflows CI/CD d'accéder à vos dépôts Gi
      - `HARBOR_URL` : l'URL de votre registre Harbor (ex: harbor.example.com)
      - `HARBOR_USERNAME` : votre nom d'utilisateur Harbor
      - `HARBOR_PASSWORD` : votre mot de passe ou token Harbor
-     - `GH_PAT` : le Personal Access Token GitHub créé précédemment
 
 <a name="github-workflows"></a>
 ## 3. GitHub Workflows et CI/CD
@@ -390,7 +389,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: VOTRE_NOM_UTILISATEUR/argocd-helm-charts
-          token: ${{ secrets.GH_PAT }}
       
       - name: Update image tag in Helm values
         run: |
@@ -432,7 +430,6 @@ Pour des déploiements plus sûrs, nous pouvons implémenter des stratégies de 
       - uses: actions/checkout@v3
         with:
           repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-          token: ${{ secrets.GH_PAT }}
       - name: Update canary image
         run: |
           sed -i "s|image: .*/demo-app:.*$|image: ${{ secrets.HARBOR_URL }}/project-name/demo-app:${{ github.sha }}|g" kubernetes/canary.yaml

@@ -261,7 +261,6 @@ Pour les organisations qui opèrent dans plusieurs environnements cloud, il est 
        - uses: actions/checkout@v3
          with:
            repository: VOTRE_NOM_UTILISATEUR/argocd-demo-app
-           token: ${{ secrets.GH_PAT }}
            
        - name: Update image tags for all regions
          run: |
