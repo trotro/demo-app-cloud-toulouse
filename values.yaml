@@ -13,7 +13,7 @@ standard-app:
     type: composition
   ingress:
     enabled: true
-    host: standard-app.wariie.cloud
+    host: standard-app.cgicloudtoulouse.fr
 
 standard-app-postgres:
   enabled: false
