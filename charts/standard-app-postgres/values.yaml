@@ -1,5 +1,5 @@
 image:
-  name: harbor.wariie.cloud/library/standard-app-postgres:140dd928d5b12ef60d157ce08b36649bb60f1de5
+  name: harbor.wariie.cloud/library/standard-app-postgres:6fa735ae26b55c8ced3ac8bb6c7eea7288138e9d
 hpa:
   enabled: true
   minReplicas: 1
