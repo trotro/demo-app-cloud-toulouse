@@ -1,5 +1,5 @@
 image:
-  name: harbor.cgicloudtoulouse.fr/library/standard-app-postgres:8611711bbc885cf4dd302e70e6408794da01af6d
+  name: harbor.cgicloudtoulouse.fr/library/standard-app-postgres:ea0ebeb93f5405a4d49e82b85e60f1adb9f76eba
 hpa:
   enabled: true
   minReplicas: 1
