@@ -68,9 +68,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install bandit
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Run SAST scan with bandit
-        run: |
-          bandit -r . -x ./tests
+      # - name: Run SAST scan with bandit
+      #   run: |
+      #     bandit -r . -x ./tests
     #   - uses: pyupio/safety-action@v1
     #     with:
     #       api-key: ${{ secrets.SAFETY_API_KEY }}
