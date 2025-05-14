@@ -6,8 +6,8 @@ metadata:
     app: postgres
 spec:
   #storageClassName: local-path
-  #accessModes:
-  #  - ReadWriteOnce
+  accessModes:
+   - ReadWriteOnce #Will not work with multi-pods postgres setup
   resources:
     requests:
       storage: 2Gi
