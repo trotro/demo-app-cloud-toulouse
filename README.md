@@ -592,34 +592,6 @@ Autres fonctionnalités utiles d'ArgoCD :
 <a name="scenarios-atelier"></a>
 ## 5. Scénarios d'Atelier
 
-Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts évoqués
-
-### 5.1 Scénario 1 : Déploiement d'une Application Microservices avec ArgoCD
-
-Dans ce scénario, nous déploierons une application multi-composants en utilisant ArgoCD :
-
-1. Forkez le dépôt : https://github.com/Wariie/demo-app-cloud-toulouse.git
-
-2. Enregistrez l'application dans ArgoCD :
-
-```bash
-argocd app create standard-app \
-  --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
-  --path . \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace microservices \
-  --sync-policy automated \
-  --self-heal \
-  --values ./values.yaml
-```
-
-3. Explorez les composants et dépendances de l'application déployée
-
-4. Effectuez une modification de configuration et observez le workflow GitOps
-
-<a name="scenarios-atelier"></a>
-## 5. Scénarios d'Atelier
-
 Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts appris :
 
 ### 5.1 Scénario 1 : Déploiement d'une Application Standard avec ArgoCD
