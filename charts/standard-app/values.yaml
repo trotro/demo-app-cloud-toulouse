@@ -1,5 +1,5 @@
 image:
-  name: harbor.wariie.cloud/library/standard-app:8bf634cba75a573992a465b4b4ed761dcf47e95c
+  name: harbor.cgicloudtoulouse.fr/library/standard-app:746c3398a191d3dc0728dd9524ec35c3f976fd25
 hpa:
   enabled: true
   minReplicas: 1
