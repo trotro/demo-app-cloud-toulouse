@@ -156,8 +156,9 @@ jobs:
         run: |
           # Création d'un fichier values.yaml temporaire avec l'image mise à jour
           cat <<EOF > /tmp/values-override.yaml
-          image:
-            name: ${{ secrets.HARBOR_URL }}/library/standard-app-postgres:${{ github.sha }}
+          standard-app-postgres:
+            image:
+              name: ${{ secrets.HARBOR_URL }}/library/standard-app-postgres:${{ github.sha }}
           EOF
           
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
