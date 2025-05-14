@@ -187,98 +187,7 @@ on:
     branches: [ master ]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    #   - name: Run unit tests with pytest
-    #     run: |
-    #       pytest --cov=. --cov-report=xml
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.xml
-
-  security-scan:
-    runs-on: ubuntu-latest
-    permissions:
-        security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Run SAST scan with bandit
-        run: |
-          bandit -r . -x ./tests
-      - uses: pyupio/safety-action@v1
-        with:
-          api-key: ${{ secrets.SAFETY_API_KEY }}
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-  build:
-    needs: [lint, test, security-scan]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Login to Harbor
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ secrets.HARBOR_URL }}
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ secrets.HARBOR_URL }}/library/standard-app:latest,${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.HARBOR_URL }}/library/standard-app:buildcache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+  ...
   
   integration-test:
     needs: build
@@ -381,34 +290,7 @@ jobs:
           curl -s http://localhost:5000/health | grep healthy
           curl -s http://localhost:5000/livres | grep "Le DevOps c'est super !"
   
-  update-manifests:
-    needs: integration-test
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: VOTRE_NOM_UTILISATEUR/argocd-helm-charts
-      
-      - name: Update image tag in Helm values
-        run: |
-          # Installation de yq pour la manipulation YAML
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod a+x /usr/local/bin/yq
-          
-          # Mise à jour du tag d'image dans le fichier values.yaml
-          yq eval '.image.name = "${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}"' -i charts/standard-app/values.yaml
-          
-          # Vérification de la mise à jour
-          cat charts/standard-app/values.yaml
-      
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add charts/standard-app/values.yaml
-          git commit -m "Update image tag to ${{ github.sha }}"
-          git push
+ ...
 ```
 
 ### 3.5 Stratégies de Déploiement Progressif
