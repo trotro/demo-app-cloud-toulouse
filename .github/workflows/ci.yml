@@ -161,9 +161,9 @@ jobs:
           EOF
           
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
-          helm upgrade --install standard-app ./charts/standard-app \
+          helm upgrade --install standard-app . \
             --namespace test \
-            -f ./charts/standard-app/values-dev.yaml \
+            -f ./values-dev.yaml \
             -f /tmp/values-override.yaml \
             --debug
           

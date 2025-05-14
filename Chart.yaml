@@ -1,0 +1,19 @@
+apiVersion: v2
+name: postgres
+description: Chart Workshop 
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+- name: postgres
+  repository: file://charts/postgres
+  condition: postgres.enabled
+
+- name: standard-app
+  repository: file://charts/standard-app
+  condition: standard-app.enabled
+
+- name: standard-app-postgres
+  repository: file://charts/standard-app-postgres
+  condition: standard-app-postgres.enabled

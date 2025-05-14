@@ -161,9 +161,9 @@ jobs:
           EOF
           
           # Installation/mise à jour du chart Helm avec les valeurs personnalisées
-          helm upgrade --install standard-app-postgres ./charts/standard-app-postgres \
+          helm upgrade --install standard-app-postgres . \
             --namespace test \
-            -f ./charts/standard-app-postgres/values-dev.yaml \
+            -f ./values-dev-postgres.yaml \
             -f /tmp/values-override.yaml \
             --debug
           
