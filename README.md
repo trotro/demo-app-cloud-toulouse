@@ -60,7 +60,7 @@ Pour permettre à ArgoCD et à vos workflows CI/CD d'accéder à vos dépôts Gi
 
 2. **Configuration des identifiants Harbor** :
    - Récupérez vos identifiants pour le registre Harbor privé :
-     - URL du registre : `harbor.example.com` (remplacez par l'URL réelle fournie pour l'atelier)
+     - URL du registre : `harbor.cgicloudtoulouse.fr`
      - Nom d'utilisateur Harbor
      - Mot de passe ou token d'accès Harbor
 
@@ -143,7 +143,7 @@ jobs:
 
 ### 3.3 Intégration CI/CD avec ArgoCD
 
-Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec ArgoCD :
+Pour compléter le pipeline CI/CD, vous allez intégrer GitHub Actions avec ArgoCD :
 
 1. Ajoutez un job de déploiement à votre workflow GitHub Actions :
 
@@ -168,10 +168,8 @@ Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec Arg
 ```
 
 Ce workflow :
-1. Exécute les tests
-2. Construit et publie une image Docker dans Harbor
-3. Met à jour le manifeste de déploiement Kubernetes avec le nouveau tag d'image
-4. ArgoCD détecte le changement et déploie automatiquement la nouvelle version
+1. Met à jour le manifeste de déploiement Kubernetes avec le nouveau tag d'image
+2. ArgoCD détecte le changement et déploie automatiquement la nouvelle version
 
 ### 3.4 Workflow Avancé avec Validation et Tests d'Intégration
 
@@ -180,7 +178,7 @@ Améliorons notre workflow avec des validations supplémentaires et des tests d'
 ```yaml
 name: CI/CD Pipeline
 
-on:
+on:présentés précédemment
   push:
     branches: [ master ]
   pull_request:
@@ -295,9 +293,9 @@ jobs:
 
 ### 3.5 Stratégies de Déploiement Progressif
 
-Pour des déploiements plus sûrs, nous pouvons implémenter des stratégies de déploiement progressif avec GitHub Actions et ArgoCD :
+Pour des déploiements plus sûrs, vous pourrez implémenter des stratégies de déploiement progressif avec GitHub Actions et ArgoCD :
 
-### 1. Déploiement Canary
+#### 1. Déploiement Canary
 
 1. Créez un manifeste pour le déploiement canary dans `kubernetes/canary.yaml`
 
@@ -339,9 +337,9 @@ Pour un déploiement blue/green, vous pouvez créer deux environnements identiqu
 
 ### 4.0 Prérequis pour réaliser cette section 
 
-Afin de réaliser cette partie, nous avons besoin d'une adresse mail associée à un compte Google. 
+Pour de réaliser cette partie, vous aurez besoin d'une adresse mail associée à un compte Google. 
 
-En effet sur l'url https://argocd.cgicloudtoulouse.fr, vous aurez la possibilitée de pouvoir vous connecter à l'application ArgoCD. Cependant, nous devons en amont positionner des droits. 
+En effet sur l'url https://argocd.cgicloudtoulouse.fr, vous aurez la possibilité de pouvoir vous connecter à l'application ArgoCD. Cependant, vous devez en amont positionner des droits. 
 
 Cela se fait via un projet ArgoCD, qui est une entité permettant de gérer un ensemble d'applications. Il offre également la possibilité de définir divers droits et restrictions pour un meilleur contrôle des déploiements.
 
@@ -407,7 +405,7 @@ Pour créer une application dans ArgoCD qui utilise des images de votre registre
 
 1. Forkez ce dépôt exemple : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
-2. Dans ce dossier, on retrouve un ensemble de fichier permettant de déployer simplement l'image créé auparavent. Ce projet helm comporte l'ensemble d'éléments suivants :
+2. Dans ce dossier, on retrouve un ensemble de fichier permettant de déployer simplement l'image créée auparavent. Ce projet helm comporte l'ensemble d'éléments suivants :
 - Un deployment
 - Un ingress GCP
 - Un HPA
@@ -476,9 +474,9 @@ Autres fonctionnalités utiles d'ArgoCD :
 <a name="scenarios-atelier"></a>
 ## 5. Scénarios d'Atelier
 
-Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts :
+Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts présentés précédemment :
 
-### Note importante pour les participants
+### ⚠️ Note importante pour les participants
 
 **Attention :** Les scénarios 5.1 et 5.2 utilisent le même dépôt source (`demo-app-cloud-toulouse.git`) avec des configurations différentes. Pour éviter les conflits lorsque vous suivez ces scénarios :
 
@@ -509,13 +507,14 @@ Choisissez l'approche qui vous convient le mieux selon votre niveau de confort a
 
 ### 5.1 Scénario 1 : Déploiement d'une Application Standard avec ArgoCD
 
-Dans ce scénario, nous déploierons une application REST simple en utilisant ArgoCD :
+Dans ce scénario, vous déploierez une application REST simple en utilisant ArgoCD :
 
 1. Forkez le dépôt : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
 2. Enregistrez l'application dans ArgoCD :
 ```bash
 argocd app create standard-app \
+  --project demo-standard
   --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
   --path . \
   --dest-server https://kubernetes.default.svc \
@@ -543,6 +542,7 @@ Dans ce scénario, vous allez mettre en place une application qui interagit avec
 3. Créez une application ArgoCD pour déployer l'ensemble :
 ```bash
 argocd app create standard-app-postgres \
+  --project demo-standard
   --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
   --path . \
   --dest-server https://kubernetes.default.svc \
@@ -560,7 +560,7 @@ argocd app create standard-app-postgres \
 
 #TODO CHECK BOOKSTACK
 
-Dans ce scénario, nous allons déployer Bookstack, une plateforme open-source de gestion de documentation basée sur Laravel :
+Dans ce scénario, vous allez déployer Bookstack, une plateforme open-source de gestion de documentation basée sur Laravel :
 
 1. Forkez le dépôt contenant les charts Helm pour Bookstack : https://github.com/Wariie/bookstack-k8s.git
 
@@ -588,7 +588,7 @@ argocd app create bookstack \
 
 ### 5.4 Scénario 4 : Pipeline CI/CD Complet avec GitHub Actions et ArgoCD
 
-Dans ce scénario, nous implémenterons un pipeline CI/CD complet avec intégration entre GitHub Actions et ArgoCD :
+Dans ce scénario, vous implémenterez un pipeline CI/CD complet avec intégration entre GitHub Actions et ArgoCD :
 
 1. Forkez le dépôt qui combine application et configuration : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
@@ -628,11 +628,11 @@ Ce scénario illustre l'intégration complète entre les phases CI (Intégration
 
 ### 6.1 Principes de Crossplane 
 
-Crossplane est une solution permmetant de déployer une infrastructure Cloud à travers Kubernetes. https://www.crossplane.io/
+Crossplane est une solution permettant de déployer une infrastructure Cloud à travers Kubernetes. https://www.crossplane.io/
 
 Pour fonctionner, Crossplane utilise les providers de Terraform et génère un exemple de CRD permettant de créer les ressources correspondant aux objets Cloud demandés. 
 
-La mise en place de crossplane pour ce Workshop est effectué grace au fichier suivant:
+La mise en place de crossplane pour ce Workshop est effectué grâce aux fichiers suivant:
 - **argocd-ref/templates/crossplane.yaml** qui permet de déployer la solution Crossplane en elle même 
 - **argocd-ref/templates/crossplane-provider.yaml** qui permet de déployer les providers et prérequis pour créer des ressources Cloud avec Crossplane via le répertoire **crossplane-provider**
 
@@ -677,7 +677,7 @@ Celle-ci est définie par le fichier crossplane-provider/compositionipdns.yaml
 
 La Custom Ressource est déployé via le fichier charts/standard-app/templates/ipanddns.yaml.
 
-Ainsi via la composition une adresse ip est remontée, une fois créé cette dernière va être remontée à la CR qui va donner cette information à la ressource ZoneRecord (décrite par https://marketplace.upbound.io/providers/edixos/provider-ovh/v1.1.0/resources/dns.ovh.edixos.io/ZoneRecord/v1alpha1 )
+Ainsi via la composition une adresse ip est remontée, une fois créée cette dernière va être remontée à la CR qui va donner cette information à la ressource ZoneRecord (décrite par https://marketplace.upbound.io/providers/edixos/provider-ovh/v1.1.0/resources/dns.ovh.edixos.io/ZoneRecord/v1alpha1 )
 
 Ainsi normalement il ne reste plus qu'à déployer et tester. 
 
