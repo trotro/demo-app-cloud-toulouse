@@ -5,9 +5,9 @@ metadata:
   labels:
     app: postgres
 spec:
-  storageClassName: local-path
-  accessModes:
-    - ReadWriteOnce
+  #storageClassName: local-path
+  #accessModes:
+  #  - ReadWriteOnce
   resources:
     requests:
       storage: 2Gi
