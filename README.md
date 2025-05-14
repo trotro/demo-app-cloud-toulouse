@@ -154,7 +154,7 @@ Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec Arg
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: VOTRE_NOM_UTILISATEUR/cloud-toulouse-k8s-workshop
+          repository: VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git
       - name: Update image tag
         run: |
           sed -i "s|image: .*/IMAGE_NAME:.*$|image: ${{ secrets.HARBOR_URL }}/library/IMAGE_NAME:${{ github.sha }}|g" charts/standard-app/values.yaml
@@ -162,7 +162,7 @@ Pour compléter le pipeline CI/CD, nous allons intégrer GitHub Actions avec Arg
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add helm-standard-deployment/values.yaml
+          git add charts/standard-app/values.yaml
           git commit -m "Update image to ${{ github.sha }}"
           git push
 ```
@@ -297,7 +297,7 @@ jobs:
 
 Pour des déploiements plus sûrs, nous pouvons implémenter des stratégies de déploiement progressif avec GitHub Actions et ArgoCD :
 
-#### 1. Déploiement Canary
+### 1. Déploiement Canary
 
 1. Créez un manifeste pour le déploiement canary dans `kubernetes/canary.yaml`
 
@@ -358,7 +358,7 @@ Voici un exemple de projet
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: standard-app
+  name: demo-standard
   namespace: argocd
 spec:
   description: demo app to deploy
@@ -405,7 +405,7 @@ Concepts clés d'ArgoCD :
 
 Pour créer une application dans ArgoCD qui utilise des images de votre registre Harbor privé :
 
-1. Forkez ce dépôt exemple : https://github.com/Wariie/demo-app-cloud-toulouse afin de récupérer le dossier **helm-standard-deployment/**
+1. Forkez ce dépôt exemple : https://github.com/Wariie/demo-app-cloud-toulouse.git
 
 2. Dans ce dossier, on retrouve un ensemble de fichier permettant de déployer simplement l'image créé auparavent. Ce projet helm comporte l'ensemble d'éléments suivants :
 - Un deployment
@@ -414,7 +414,7 @@ Pour créer une application dans ArgoCD qui utilise des images de votre registre
 - Un service 
 - Un ensemble de différents objets Crossplane (qui par défaut ne sont pas créés cf: Partie 5)
 
-1. Créez une application ArgoCD via l'interface :
+3. Créez une application ArgoCD via l'interface :
 
 Faute d'accès au cluster Kubernetes, il est tout à fait possible de créer l'application ArgoCD depuis l'interface. 
 
@@ -429,13 +429,15 @@ metadata:
 spec:
   project: demo-standard
   source:
-    repoURL: https://github.com/Wariie/demo-app-cloud-toulouse.git
-    path: helm-standard-deployment
+    repoURL: https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git
+    path: .
     targetRevision: HEAD
     helm:
       parameters:
         - name: crossplane.enabled
           value: 'true'
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: standard-deployment
@@ -450,7 +452,7 @@ Il est également possible d'utiliser les lignes de commande argocd pour arriver
 ```bash
 argocd app create standard-app \
   --project demo-standard \
-  --repo https://github.com/Wariie/demo-app-cloud-toulouse.git \
+  --repo https://github.com/VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git \
   --path . \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace standard-deployment \
@@ -474,7 +476,36 @@ Autres fonctionnalités utiles d'ArgoCD :
 <a name="scenarios-atelier"></a>
 ## 5. Scénarios d'Atelier
 
-Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts appris :
+Ce guide propose quatre scénarios pratiques qui vous permettront de mettre en application les concepts :
+
+### Note importante pour les participants
+
+**Attention :** Les scénarios 5.1 et 5.2 utilisent le même dépôt source (`demo-app-cloud-toulouse.git`) avec des configurations différentes. Pour éviter les conflits lorsque vous suivez ces scénarios :
+
+- **Option recommandée** : Utilisez des namespaces distincts pour chaque scénario
+  ```bash
+  # Scénario 5.1 - namespace: scenario1
+  # Scénario 5.2 - namespace: scenario2
+  ```
+
+- **OU** créez une branche Git distincte pour chaque scénario
+  ```bash
+  git checkout -b scenario-5.1  # Pour le premier scénario
+  git checkout -b scenario-5.2  # Pour le deuxième scénario
+  
+  # Puis spécifiez la branche dans ArgoCD avec --revision
+  ```
+
+- **OU** complétez entièrement un scénario, puis supprimez l'application avant de passer au suivant
+  ```bash
+  # Après avoir terminé le scénario 5.1
+  argocd app delete standard-app
+  kubectl delete namespace microservices
+  ```
+
+Choisissez l'approche qui vous convient le mieux selon votre niveau de confort avec Git et ArgoCD.
+
+---
 
 ### 5.1 Scénario 1 : Déploiement d'une Application Standard avec ArgoCD
 
@@ -577,7 +608,7 @@ argocd app create demo-cicd \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace demo-cicd \
   --sync-policy automated \
-  --values values.yaml
+  --values ./values.yaml
 ```
 
 4. Effectuez une modification de code dans l'application :
@@ -620,11 +651,11 @@ En effet, il va falloir modifier la variable helm crossplane.enabled pour la pas
 
 Cette modification va avoir pour effet de déployer une composition Crossplane. 
 
-Cette composition Crossplane, déploie une adresse ip pour l'ingress gcp et fait un enregistrement sur OVH. 
+Cette composition Crossplane, déploie une adresse ip pour l'ingress gcp et fait un enregistrement DNS sur OVH. 
 
-La base ayant permis la création de ces deux composant est présente dans le dossier **helm-standard-deployment**
+La base ayant permis la création de ces deux composant est présente dans le dossier **charts/standard-app**
 
-Par exemple le fichier helm-standard-deployment/templates/ipanddns.yaml va contenir plusieurs ressources. 
+Par exemple le fichier charts/standard-app/templates/ipanddns.yaml va contenir plusieurs ressources. 
 
 Voici la ressource permettant de créer une adresse ip sur GCP :
 ```yaml
@@ -644,7 +675,7 @@ Afin de comprendre comment définir une ressource crossplane, une description ap
 Sinon, par défault, nous passons par une composition (cf: https://docs.crossplane.io/v2.0-preview/composition/composite-resource-definitions/). 
 Celle-ci est définie par le fichier crossplane-provider/compositionipdns.yaml
 
-La Custom Ressource est déployé via le fichier helm-standard-deployment/templates/ipanddns.yaml.
+La Custom Ressource est déployé via le fichier charts/standard-app/templates/ipanddns.yaml.
 
 Ainsi via la composition une adresse ip est remontée, une fois créé cette dernière va être remontée à la CR qui va donner cette information à la ressource ZoneRecord (décrite par https://marketplace.upbound.io/providers/edixos/provider-ovh/v1.1.0/resources/dns.ovh.edixos.io/ZoneRecord/v1alpha1 )
 
@@ -657,18 +688,48 @@ Cela est avantageux vis-à-vis d'un terraform car les ressources sont synchronis
 <a name="conclusion"></a>
 ## 7. Conclusion
 
-Ce guide d'atelier vous a fourni une introduction complète à la gestion des déploiements avec ArgoCD et GitHub Workflows, intégrés avec un registre privé Harbor. Vous avez appris à mettre en place un pipeline CI/CD complet qui automatise le processus de développement, de test, de construction et de déploiement d'applications.
+Ce guide d'atelier vous a fourni une introduction complète aux pratiques modernes de déploiement et de gestion d'infrastructure avec des outils de pointe tels que ArgoCD, GitHub Workflows, Harbor et Crossplane. À travers les différentes sections, vous avez appris à mettre en place un pipeline CI/CD complet qui automatise l'ensemble du cycle de vie de vos applications, de leur développement à leur déploiement.
 
-Les principaux points à retenir sont :
+### Principaux concepts acquis
 
-1. **GitOps avec ArgoCD** - L'utilisation de Git comme source unique de vérité pour vos déploiements permet une gestion déclarative, versionnable et auditée de votre infrastructure.
+1. **GitOps avec ArgoCD** - Vous avez découvert comment utiliser Git comme source unique de vérité pour vos déploiements, permettant une gestion déclarative, versionnable et auditée de votre infrastructure. Le modèle GitOps facilite la collaboration, améliore la traçabilité et offre des mécanismes de rollback simples en cas de problème.
 
-2. **Automation avec GitHub Actions** - L'automatisation des tests, de la construction d'images et des mises à jour de configuration permet d'accélérer les cycles de développement tout en maintenant la qualité.
+2. **Automation avec GitHub Actions** - L'automatisation des tests, du linting, des analyses de sécurité, de la construction d'images et des mises à jour de configuration vous permet d'accélérer les cycles de développement tout en maintenant un haut niveau de qualité et de sécurité dans votre code.
 
-3. **Sécurité avec Harbor** - L'utilisation d'un registre privé comme Harbor permet de sécuriser vos images, d'appliquer des politiques de sécurité et de maintenir la conformité.
+3. **Sécurité avec Harbor** - L'utilisation d'un registre privé comme Harbor vous permet de sécuriser vos images, d'appliquer des politiques de sécurité, de scanner les vulnérabilités et de maintenir la conformité de vos déploiements.
 
-4. **Déploiement progressif** - Les stratégies de déploiement comme blue/green et canary vous permettent de réduire les risques associés aux déploiements en production.
+4. **Stratégies de déploiement avancées** - Vous avez exploré différentes stratégies comme les déploiements blue/green et canary qui vous permettent de réduire les risques associés aux mises en production tout en garantissant une expérience utilisateur optimale.
 
-5. **Multi-environnement et multi-cloud** - Les techniques apprises vous permettent de gérer efficacement plusieurs environnements et fournisseurs cloud de manière cohérente.
+5. **Infrastructure as Code avec Crossplane** - Vous avez découvert comment Crossplane permet d'étendre les principes GitOps à l'infrastructure cloud elle-même, en utilisant les Custom Resources de Kubernetes pour provisionner et gérer des ressources cloud dans différents fournisseurs.
 
-En continuant à explorer et<a name="ressources"></a>
+### Applications pratiques
+
+Les scénarios d'atelier vous ont permis de mettre en pratique ces concepts dans des contextes concrets :
+- Déploiement d'applications simples et de microservices
+- Mise en place de pipelines CI/CD complets
+- Gestion de multiples environnements (dev, staging, production)
+- Création et gestion d'infrastructure cloud via Kubernetes
+
+### Perspectives et prochaines étapes
+
+Pour approfondir vos connaissances et améliorer encore vos pratiques DevOps, vous pourriez explorer :
+
+1. **Observabilité** - Intégrer des solutions de monitoring, logging et tracing pour avoir une visibilité complète sur vos applications et votre infrastructure.
+
+2. **Policy as Code** - Implémenter des politiques de sécurité et de conformité automatisées avec des outils comme Open Policy Agent (OPA) ou Kyverno.
+
+3. **GitOps avancé** - Explorer des fonctionnalités plus avancées d'ArgoCD comme l'ApplicationSet pour gérer des applications à travers de multiples clusters ou environnements.
+
+4. **Infrastructure avancée avec Crossplane** - Créer des compositions complexes pour provisionner des environnements complets avec un minimum d'intervention manuelle.
+
+5. **Sécurité continue** - Mettre en place des pratiques de sécurité plus avancées comme le scanning d'images en continu, la signature d'images et la vérification d'intégrité.
+
+### Mot de la fin
+
+La mise en place d'un pipeline CI/CD moderne basé sur les principes GitOps représente un investissement significatif en temps et en ressources, mais les bénéfices en termes de productivité, de qualité et de fiabilité sont considérables. En automatisant le déploiement et la gestion de configuration, vous permettez à vos équipes de se concentrer sur ce qui apporte réellement de la valeur : le développement de nouvelles fonctionnalités et l'amélioration de l'expérience utilisateur.
+
+N'oubliez pas que le voyage vers DevOps et GitOps est un processus d'amélioration continue. Commencez petit, mesurez vos progrès, et étendez progressivement vos pratiques à d'autres parties de votre organisation.
+
+Nous espérons que cet atelier vous a fourni les connaissances et l'inspiration nécessaires pour commencer ou poursuivre votre parcours vers des pratiques de déploiement plus modernes et efficaces.
+
+---
