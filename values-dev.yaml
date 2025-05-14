@@ -1,7 +1,7 @@
 standard-app:
   enabled: true
-  image:
-    name: harbor.wariie.cloud/library/standard-app-postgres:ba1ebe2e681a4f30cea69944e5084a08f90428a1
+  # image:
+  #   name: harbor.wariie.cloud/library/standard-app-postgres:ba1ebe2e681a4f30cea69944e5084a08f90428a1
   hpa:
     enabled: false
     minReplicas: 1
