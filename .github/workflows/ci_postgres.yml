@@ -230,7 +230,6 @@ jobs:
           
           # Mise à jour du tag d'image dans le fichier values.yaml
           yq eval '.image.name = "${{ secrets.HARBOR_URL }}/library/standard-app-postgres:${{ github.sha }}"' -i charts/standard-app-postgres/values.yaml
-          yq eval '.image.name = "${{ secrets.HARBOR_URL }}/library/standard-app-postgres:${{ github.sha }}"' -i charts/standard-app-postgres/values-dev.yaml
           
           # Vérification de la mise à jour
           cat charts/standard-app-postgres/values.yaml
