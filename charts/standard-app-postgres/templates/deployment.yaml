@@ -28,7 +28,7 @@ spec:
           - name: DB_HOST
             value: {{ include "clean-release-name" .  }}-postgres
           - name: DB_PORT
-            value: 5432
+            value: "5432"
           - name: DB_USER
             valueFrom:
                 secretKeyRef:
@@ -42,7 +42,7 @@ spec:
           - name: DB_NAME
             value: librairie_db
           - name: PORT
-            value: 5000
+            value: "5000"
         readinessProbe:
           httpGet:
             path: /health
