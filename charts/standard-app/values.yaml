@@ -1,5 +1,5 @@
 image:
-  name: harbor.wariie.cloud/library/standard-app:6fa735ae26b55c8ced3ac8bb6c7eea7288138e9d
+  name: harbor.wariie.cloud/library/standard-app:67e63be8974b1c1bcb533737e0ba927376978b5b
 hpa:
   enabled: true
   minReplicas: 1
