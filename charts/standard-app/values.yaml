@@ -1,5 +1,5 @@
 image:
-  name: harbor.cgicloudtoulouse.fr/library/standard-app:ea0ebeb93f5405a4d49e82b85e60f1adb9f76eba
+  name: harbor.cgicloudtoulouse.fr/library/standard-app:a40a3ffa7cb8ad3db4ecdf46fb94815b5270be74
 hpa:
   enabled: true
   minReplicas: 1
