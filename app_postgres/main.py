@@ -1,4 +1,4 @@
-from librairie_db import Librairie, LibrairieDB
+from librairie import Librairie, LibrairieDB
 from flask import Flask, jsonify, request
 import os
 from dotenv import load_dotenv
