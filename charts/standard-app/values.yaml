@@ -11,5 +11,5 @@ crossplane:
 
   type: composition
 ingress:
-  enabled: true
+  enabled: false
   host: standard-app.wariie.cloud

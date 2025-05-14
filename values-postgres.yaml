@@ -8,9 +8,8 @@ standard-app-postgres:
     maxReplicas: 5
     targetCPUUtilizationPercentage: 80
   crossplane:
-    enabled: false
+    enabled: true
     # composition ou direct
-
     type: composition
   ingress:
     enabled: true

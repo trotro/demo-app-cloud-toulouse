@@ -3,18 +3,18 @@ standard-app:
   image:
     name: harbor.wariie.cloud/library/standard-app-postgres:ba1ebe2e681a4f30cea69944e5084a08f90428a1
   hpa:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 5
     targetCPUUtilizationPercentage: 80
   crossplane:
     enabled: false
     # composition ou direct
-
     type: composition
   ingress:
-    enabled: true
-    host: standard-app.wariie.cloud
+    enabled: false
+  imagePullSecrets: 
+  - name: harbor-creds
 
 standard-app-postgres:
   enabled: false
