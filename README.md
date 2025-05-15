@@ -1,4 +1,3 @@
-
 ## Guide d'Atelier
 
 ### Table des Matières
