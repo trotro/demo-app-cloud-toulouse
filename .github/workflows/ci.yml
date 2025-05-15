@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   push_to_registries:
@@ -41,3 +41,122 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  update-manifests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: VOTRE_NOM_UTILISATEUR/demo-app-cloud-toulouse.git
+      - name: Update image tag
+        run: |
+          sed -i "s|image: .*/IMAGE_NAME:.*$|image: ${{ secrets.HARBOR_URL }}/library/IMAGE_NAME:${{ github.sha }}|g" charts/standard-app/values.yaml
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add charts/standard-app/values.yaml
+          git commit -m "Update image to ${{ github.sha }}"
+          git push
+  
+  integration-test:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest requests
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }}
+
+      - name: Set up k8s Kind cluster
+        uses: helm/kind-action@v1.12.0
+      - name: Create image pull secret
+        run: |
+          # Création du namespace de test
+          kubectl create namespace test --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret docker-registry harbor-creds \
+            --namespace test \
+            --docker-server=${{ secrets.HARBOR_URL }} \
+            --docker-username=${{ secrets.HARBOR_USERNAME }} \
+            --docker-password=${{ secrets.HARBOR_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy app to test cluster
+        run: |
+          # Création d'un fichier values.yaml temporaire avec l'image mise à jour
+          cat <<EOF > /tmp/values-override.yaml
+          image:
+            name: ${{ secrets.HARBOR_URL }}/library/standard-app:${{ github.sha }}
+          EOF
+          
+          # Installation/mise à jour du chart Helm avec les valeurs personnalisées
+          helm upgrade --install standard-app ./charts/standard-app \
+            --namespace test \
+            -f ./charts/standard-app/values-dev.yaml \
+            -f /tmp/values-override.yaml \
+            --debug
+          
+          sleep 30
+
+          # Check pod status
+          echo "Checking pod status..."
+          kubectl get pods -n test -l app=standard-app -o wide
+          
+          # Check events for troubleshooting
+          echo "Checking events..."
+          kubectl get events -n test --sort-by='.lastTimestamp'
+          
+          # Describe deployment for detailed status and potential errors
+          echo "Deployment details:"
+          kubectl describe deployment/standard-app-deployment -n test
+          
+          # Check logs of any pods that exist
+          echo "Pod logs (if available):"
+          POD_NAME=$(kubectl get pods -n test -l app=standard-app -o jsonpath="{.items[0].metadata.name}" --ignore-not-found)
+          if [ -n "$POD_NAME" ]; then
+            kubectl logs $POD_NAME -n test --tail=50
+          else
+            echo "No pods found yet"
+          fi
+          
+          # Wait with timeout for deployment to be ready
+          echo "Waiting for deployment to be ready..."
+          kubectl -n test rollout status deployment/standard-app-deployment --timeout=3m
+          
+          # Expose service for tests
+          echo "Exposing service for tests..."
+          kubectl -n test port-forward svc/standard-app-svc 5000:5000 &
+          echo "Waiting for port-forward to establish..."
+          sleep 5
+          
+          # Test the endpoint
+          echo "Testing endpoint..."
+          curl -s http://localhost:5000/health || echo "Health check failed"
+      - name: Run integration tests
+        run: |
+          # Run the integration tests against the deployed app
+          curl -s http://localhost:5000/health | grep healthy
+          curl -s http://localhost:5000/livres | grep "Le DevOps c'est super !"
